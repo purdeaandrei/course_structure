@@ -549,7 +549,6 @@ You should have received a copy of the GNU General Public License along with thi
             stop_song()
             unpause_this_au = null
             previous_sect = null
-            previous_sectindex = null
             first_end_frame = true
             if (!paused && time < 0.001) {
                 if (document.getElementById('class_begins').checked) {
@@ -565,7 +564,6 @@ You should have received a copy of the GNU General Public License along with thi
                 i = structure_expanded.length
                 ofs = 0
                 previous_sect = null
-                previous_sectindex = null
                 first_end_frame = true
             }
             if (paused) {
@@ -584,14 +582,12 @@ You should have received a copy of the GNU General Public License along with thi
                     if (i>0) {
                         pause_time = structure_expanded[i-1][1] + start_time
                         previous_sect = null // Make it looks like we're jumping from another section
-                        previous_sectindex = null
                     }
                 }
             } else {
                 if ((ofs > 2) || (i == 0)) {
                     start_time = getTime() - structure_expanded[i][1]
                     previous_sect = null // Make it looks like we're jumping from another section
-                    previous_sectindex = null
                     if (structure_expanded[i][0] == "music") {
                         stop_song();
                     }
@@ -662,7 +658,6 @@ You should have received a copy of the GNU General Public License along with thi
         let start_time = 0
         let first_end_frame = true
         let previous_sect = null
-        let previous_sectindex = null
         let structure_expanded = null
         function getTime () {
             return (new Date()).getTime()/1000
@@ -708,7 +703,6 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             previous_sect = sect
-            previous_sectindex = sectindex
         }
         function min(a,b) {
             if (a<b) return a
