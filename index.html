@@ -675,7 +675,6 @@ You should have received a copy of the GNU General Public License along with thi
         const cc = canvas.getContext("2d")
         let start_time = 0
         let first_end_frame = true
-        let next_song_to_play = 0
         let previous_sect = null
         let previous_sectindex = null
         let structure_expanded = null
@@ -712,10 +711,14 @@ You should have received a copy of the GNU General Public License along with thi
             if (previous_sect && (previous_sect[0] == "music") && (sect[0] != "music")) stop_song();
             if ((sect[0] == "music") && (sect != previous_sect)) {
                 if (all_files.length > 0) {
-                    if (next_song_to_play >= all_files.length)
-                        next_song_to_play = 0;
+                    let next_song_to_play = 0
+                    for (let j=0;j<sectindex;j++) {
+                        if (structure_expanded[j][0]=="music") {
+                            next_song_to_play += 1
+                        }
+                    }
+                    next_song_to_play %= all_files.length
                     play_song_at_index(next_song_to_play, sect[2] - sect[1] - left);
-                    next_song_to_play += 1
                 }
             }
             previous_sect = sect
@@ -995,7 +998,6 @@ You should have received a copy of the GNU General Public License along with thi
             document.body.style.background="black"
             start_time = getTime()
             paused = false
-            next_song_to_play = 0
             first_end_frame = true
             if (document.getElementById('class_begins').checked) {
                 document.getElementById('class_begins_sound').play()
