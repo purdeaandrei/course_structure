@@ -106,6 +106,8 @@ You should have received a copy of the GNU General Public License along with thi
         <br/>
         <input type="checkbox" id="navigation_buttons_enable" checked><label for="navigation_buttons_enable">Enable a navigation buttons on the bottom left corner.</label><br/>
         <input type="checkbox" id="navigation_keyboard_shortcuts_enable" checked><label for="navigation_keyboard_shortcuts_enable">Enable keyboard shortcuts. (See <a href="https://github.com/purdeaandrei/course_structure/blob/master/README.md#keyboard-shortcuts">here</a>)</label><br/>
+        <input type="checkbox" id="show_progress_bar" checked onclick="show_progress_bar_onclick()"><label for="show_progress_bar">Show progress bar</label><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="progress_bar_seeking_enabled" checked><label for="progress_bar_seeking_enabled">Allow seeking by clicking the progress bar</label><br/>
         <h2>Select Music</h2>
         
         <label for="filechooser" id="filechooserlabel" class="mybutton">
@@ -590,6 +592,15 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
         }
+        const seek_to_time = (time, ev) => {
+            const current_time = getTime()
+            start_time = current_time - time
+            pause_time = current_time
+            stop_song()
+            unpause_this_au = null
+            previous_sect = null
+            previous_sectindex = null
+        }
         const click_skip_prev = (ev) => {
             let [i, ofs] = get_current_index_and_offset()
             if (i === null) {
@@ -651,6 +662,12 @@ You should have received a copy of the GNU General Public License along with thi
                 canvas.requestFullscreen()
             }
         }
+        function show_progress_bar_onclick() {
+            const show = document.getElementById('show_progress_bar')
+            const seeking = document.getElementById('progress_bar_seeking_enabled')
+            seeking.checked = show.checked
+            seeking.disabled = !show.checked
+        }
         canvas.onclick = (ev) => {
             const boxs = max(min(canvas.width, canvas.height) / 9, 30)
             let captured = false
@@ -668,6 +685,18 @@ You should have received a copy of the GNU General Public License along with thi
                     }
                 }
             }
+            if (document.getElementById('show_progress_bar').checked) {
+                const progress_bar_height = canvas.height / 20
+                if (ev.clientY < progress_bar_height) {
+                    captured = true
+                    if (document.getElementById('progress_bar_seeking_enabled').checked) {
+                        const total_length = structure_expanded[structure_expanded.length - 1][2]
+                        const next_time = ev.clientX / canvas.width * total_length
+                        seek_to_time(next_time, ev)
+                    }
+                }
+            }
+
             if (!captured) {
                 toggle_fullscreen()
             }
@@ -732,16 +761,76 @@ You should have received a copy of the GNU General Public License along with thi
             if (a>b) return a
             return b
         }
+        function get_progress_bar_color_of(section_type) {
+            if (section_type == "music") return "cyan"
+            if (section_type == "summary") return "orange"
+            return "black"
+        }
+        let last_canvasX = null
+        let last_canvasY = null
         function drawCurrentFrame() {
+            let cursor_style = "initial"
             let time = getTime() - start_time
             if (paused) {
                 time = pause_time - start_time
             }
             
+            cc.setTransform(1, 0, 0, 1, 0, 0)
             cc.fillStyle="black"
             cc.fillRect(0, 0, canvas.width, canvas.height)
-            cc.fillStyle="white"
             
+            let height_left = canvas.height
+            if (document.getElementById('show_progress_bar').checked) {
+                cc.fillStyle="red"
+                const progress_bar_height = canvas.height / 20
+                const total_length = structure_expanded[structure_expanded.length - 1][2]
+                const progress = time / total_length
+                const tick_w = canvas.width / 240
+                const progress_width = (canvas.width) * progress
+                cc.fillRect(0, progress_bar_height / 2, progress_width , progress_bar_height / 2)
+                cc.fillStyle="grey"
+                cc.fillRect(progress_width, progress_bar_height / 2, canvas.width - progress_width , progress_bar_height / 2)
+                for (const f of structure_expanded) {
+                    const fill_color = get_progress_bar_color_of(f[0])
+                    const right_edge = f[2] * canvas.width / total_length
+                    const left_edge = f[1] * canvas.width / total_length
+                    cc.fillStyle=fill_color
+                    cc.fillRect(left_edge, 0, right_edge - left_edge, progress_bar_height / 2)
+                }
+                cc.fillStyle="white"
+                for (let i=0; i<structure_expanded.length - 1; i++) {
+                    const f = structure_expanded[i]
+                    const fill_color = get_progress_bar_color_of(f[0])
+                    const fill_color_next = get_progress_bar_color_of(structure_expanded[i+1][0])
+                    if (fill_color_next == fill_color) {
+                        const tick_x = f[2] * canvas.width / total_length
+                        // Print a tick, if color is the same
+                        cc.beginPath()
+                        cc.moveTo(tick_x - tick_w, 0)
+                        cc.lineTo(tick_x + tick_w, 0)
+                        cc.lineTo(tick_x + tick_w, progress_bar_height / 4)
+                        cc.lineTo(tick_x, progress_bar_height / 2)
+                        cc.lineTo(tick_x - tick_w, progress_bar_height / 4)
+                        cc.fill()
+                    }
+                }
+                if (last_canvasY != null && last_canvasY < progress_bar_height) {
+                    if (document.getElementById('progress_bar_seeking_enabled').checked) {
+                        cursor_style = "col-resize"
+                        cc.fillStyle="rgba(255,255,255,0.4)"
+                        cc.fillRect(0,0,last_canvasX, progress_bar_height)
+                        /*cc.fillStyle="red"
+                        cc.beginPath()
+                        cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
+                        cc.fill()*/
+                    } else {
+                        cursor_style = "not-allowed"
+                    }
+                }
+                cc.setTransform(1, 0, 0, 1, 0, progress_bar_height)
+                height_left = canvas.height - progress_bar_height
+            }
+            cc.fillStyle="white"
             let found = false
             let ii = 0
             let sect = null
@@ -764,21 +853,21 @@ You should have received a copy of the GNU General Public License along with thi
                     
                     // These are the 16:9 aspect ratio variants
                     let x = canvas.width - 20
-                    let y = canvas.height / 2
-                    let r = min(canvas.width, canvas.height / 2)
-                    let tx = (canvas.width - canvas.height/2) / 2
-                    let ty = canvas.height / 2
+                    let y = height_left / 2
+                    let r = min(canvas.width, height_left / 2)
+                    let tx = (canvas.width - height_left/2) / 2
+                    let ty = height_left / 2
                     let fontsize = Math.floor(canvas.width * 0.25)
 
                     cc.textAlign = "center"
                     cc.textBaseline = "middle"
                     
-                    const ratio = canvas.width/canvas.height
+                    const ratio = canvas.width/height_left
 
                     if (left >= 60) {
                         if (ratio < 0.9124767225325885) {
-                            y = canvas.height * 74 / 100
-                            fontsize = canvas.height * 0.25
+                            y = height_left * 74 / 100
+                            fontsize = height_left * 0.25
                             ty = fontsize / 2 * 1.2
                             tx = canvas.width / 2
                             if (ratio < 0.6444981862152358) {
@@ -786,8 +875,8 @@ You should have received a copy of the GNU General Public License along with thi
 
                             }
                         } else if (ratio < 1.3824975417895773) {
-                            y = canvas.height * 74 / 100
-                            ty = canvas.height / 3
+                            y = height_left * 74 / 100
+                            ty = height_left / 3
                             tx = canvas.width * 34 / 100
                         }
                     } else {
@@ -798,15 +887,15 @@ You should have received a copy of the GNU General Public License along with thi
                         ty = 10
                         
                         if (ratio > 1) {
-                            r = min(canvas.width / 4, canvas.height / 2)
+                            r = min(canvas.width / 4, height_left / 2)
                             cc.textAlign = "left"
                             cc.textBaseline = "top"
-                            y = canvas.height - r
+                            y = height_left - r
                         } else {
-                            r = min((canvas.width - 20) / 2, canvas.height * 60 / 100 / 2)
-                            y = canvas.height - r - 10
+                            r = min((canvas.width - 20) / 2, height_left * 60 / 100 / 2)
+                            y = height_left - r - 10
                             tx = canvas.width / 2
-                            ty = canvas.height / 4
+                            ty = height_left / 4
                             fontsize = Math.floor(canvas.width * 0.45)
                         }
                         x = canvas.width - r - 10
@@ -845,7 +934,7 @@ You should have received a copy of the GNU General Public License along with thi
                 cc.font = "" + fontsize + "px Arial"
                 cc.textAlign = "center"
                 cc.textBaseline = "middle"
-                cc.fillText("THE END", canvas.width/2, canvas.height/2)
+                cc.fillText("THE END", canvas.width/2, height_left/2)
                 if (first_end_frame) {
                     if (document.getElementById('sound_at_end').checked) {
                         let what = document.getElementById('what_to_play_at_end').value
@@ -855,7 +944,7 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             if (document.getElementById('navigation_buttons_enable').checked) {
-                const boxs = max(min(canvas.width, canvas.height) / 9, 30)
+                const boxs = max(min(canvas.width, height_left) / 9, 30)
                 const h = boxs * 7 / 10
                 const w = boxs * 2 / 10
                 const d = boxs * 2 / 10
@@ -865,57 +954,65 @@ You should have received a copy of the GNU General Public License along with thi
                     cc.fillStyle="rgba(255,255,255,0.2)"
                 }
                 cc.strokeStyle=cc.fillStyle
-                cc.strokeRect(4, canvas.height-boxs-4, boxs, boxs)
-                cc.fillRect(4 + (boxs-(w*2 + d))/2, canvas.height-boxs-4 + (boxs - h)/2, w, h)
-                cc.fillRect(4 + (boxs-(w*2 + d))/2 + w + d, canvas.height-boxs-4 + (boxs - h)/2, w, h)
+                cc.strokeRect(4, height_left-boxs-4, boxs, boxs)
+                cc.fillRect(4 + (boxs-(w*2 + d))/2, height_left-boxs-4 + (boxs - h)/2, w, h)
+                cc.fillRect(4 + (boxs-(w*2 + d))/2 + w + d, height_left-boxs-4 + (boxs - h)/2, w, h)
                 cc.fillStyle="rgba(255,255,255,0.2)"
                 cc.strokeStyle=cc.fillStyle
-                cc.strokeRect(4 + boxs + 8, canvas.height-boxs-4, boxs, boxs)
-                cc.strokeRect(4 + boxs + 8 + boxs + 8, canvas.height-boxs-4, boxs, boxs)
+                cc.strokeRect(4 + boxs + 8, height_left-boxs-4, boxs, boxs)
+                cc.strokeRect(4 + boxs + 8 + boxs + 8, height_left-boxs-4, boxs, boxs)
                 cc.font = "" + boxs + "px Arial"
                 cc.textAlign = "center"
                 cc.textBaseline = "middle"
 
                 /* Drawing for the previous-chapter button: */
                 cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs / 2, canvas.height - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs * 1 / 6, canvas.height - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs / 2, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.moveTo(4 + boxs + 8 + boxs / 2, height_left - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs * 1 / 6, height_left - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs / 2, height_left - boxs - 4 + boxs - boxs / 10)
                 cc.fill()
                 cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs * 5 / 6, canvas.height - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs * 5 / 6, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.moveTo(4 + boxs + 8 + boxs * 5 / 6, height_left - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs * 5 / 6, height_left - boxs - 4 + boxs - boxs / 10)
                 cc.fill()
                 /* Drawing for the next-chapter button: */
                 cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, canvas.height - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, height_left - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, height_left - boxs - 4 + boxs - boxs / 10)
                 cc.fill()
                 cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 5 / 6, canvas.height - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 5 / 6, height_left - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs - boxs / 10)
                 cc.fill()
 
                 if (found) {
                     cc.textAlign = "left"
                     cc.font = "" + (boxs/2) + "px Arial"
-                    cc.fillText("" + ii + ": " + sect[0], 4 + boxs + 8 + boxs + 8 + boxs + 10, canvas.height-boxs-4 + boxs*3/4)
+                    cc.fillText("" + ii + ": " + sect[0], 4 + boxs + 8 + boxs + 8 + boxs + 10, height_left-boxs-4 + boxs*3/4)
                 }
+
+                if (last_canvasY > canvas.height-boxs-4) {
+                    if ((last_canvasX < 4 + boxs + 8 + boxs + 8 + boxs)) {
+                        cursor_style = "pointer"
+                    }
+                }
+
             }
+            canvas.style.cursor = cursor_style
         }
         const anim = () => {
             drawCurrentFrame()
             requestAnimationFrame(anim)
         }
-        
+
         const resizeCanvas = () => {
-            let w = window.innerWidth - 10;
-            let h = window.innerHeight - 20;
+            let w = window.innerWidth;
+            let h = window.innerHeight;
             canvas.style.position="absolute";
-            canvas.style.left="" + ((window.innerWidth - w) / 2) + "px";
+            canvas.style.left="0px";
             canvas.width = w;
             canvas.height = h;
         };
@@ -1002,6 +1099,7 @@ You should have received a copy of the GNU General Public License along with thi
             if (document.getElementById('class_begins').checked) {
                 document.getElementById('class_begins_sound').play()
             }
+            document.getElementsByTagName('body')[0].style.margin="0 0 0 0"
             resizeCanvas();
             anim()
             window.onresize = () => {
@@ -1039,6 +1137,22 @@ You should have received a copy of the GNU General Public License along with thi
                             click_reverse_seconds(60, event)
                             break
                     }
+                })
+            }
+            if (document.getElementById('show_progress_bar').checked) {
+                canvas.addEventListener('mousemove', (event) => {
+                    const rect = canvas.getBoundingClientRect()
+                    last_canvasX = event.clientX - rect.left
+                    last_canvasY = event.clientY - rect.top
+                })
+                canvas.addEventListener('mouseover', (event) => {
+                    const rect = canvas.getBoundingClientRect()
+                    last_canvasX = event.clientX - rect.left
+                    last_canvasY = event.clientY - rect.top
+                })
+                canvas.addEventListener('mouseout', (event) => {
+                    last_canvasX = null
+                    last_canvasY = null
                 })
             }
         }
