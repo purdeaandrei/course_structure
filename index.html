@@ -61,16 +61,17 @@
     <div id="setup">
         <div id="drophere"><b>You're about to drop a file!</b></div>
         <h2>Structure</h2>
+        <button id="unlock_structure" onclick="unlock_structure()">Unlock to edit structure</button>
         <table id="course-structure-list"></table>
         <script id="line-template" type="text/template">
             <tr>
                 <td>
-                <button type="button" class="add_button">+</button>
-                <button type="button" class="remove_button">-</button>
+                <button type="button" class="add_button" disabled>+</button>
+                <button type="button" class="remove_button" disabled>-</button>
                 </td>
                 <td>{{drop-down}}</td>
-                <td><input type="text" class="structure-line-minutes" size="2" value="{{minutes}}" />:
-                <input type="text" class="structure-line-seconds" size="2" value="{{seconds}}" /></td>
+                <td><input type="text" class="structure-line-minutes" size="2" value="{{minutes}}" disabled />:
+                <input type="text" class="structure-line-seconds" size="2" value="{{seconds}}" disabled /></td>
             </tr>
         </script>
         Total course length: <span id="total-length"></span>
@@ -369,6 +370,14 @@
             document.getElementById("total-length").innerText = minutes + ":" + seconds
         }
 
+        function unlock_structure() {
+            const content = document.getElementById("course-structure-list")
+            for (const e of content.querySelectorAll('button, input, select')) {
+                e.disabled = false
+            }
+            document.getElementById("unlock_structure").style.display = "none"
+        }
+
         function display_structure(structure) {
             const content = document.getElementById("course-structure-list")
             const template = document.getElementById("line-template")
@@ -376,7 +385,7 @@
             html += "<tr><td>&nbsp</td></tr>"
             for (const item of structure)
             {
-                let dropdown = "<select>"
+                let dropdown = "<select disabled>"
                 for (const opt of options)
                 {
                     let selected = ""
@@ -389,7 +398,7 @@
                     replaceAll("{{minutes}}", item[1]).
                     replaceAll("{{seconds}}", item[2])
             }
-            html += '<tr><td><button type="button" class="add_button">+</button></tr>'
+            html += '<tr><td><button type="button" class="add_button" disabled>+</button></tr>'
             content.innerHTML = html
             refresh_event_listeners()
             refresh_timer_and_checks()
