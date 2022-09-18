@@ -730,8 +730,30 @@
                 cc.font = "" + boxs + "px Arial"
                 cc.textAlign = "center"
                 cc.textBaseline = "middle"
-                cc.fillText("\u23EE", 4 + boxs + 8 + boxs/2, canvas.height-boxs-4 + boxs/2)
-                cc.fillText("\u23ED", 4 + boxs + 8 + boxs + 8 + boxs/2, canvas.height-boxs-4 + boxs/2)
+
+                /* Drawing for the previous-chapter button: */
+                cc.beginPath()
+                cc.moveTo(4 + boxs + 8 + boxs / 2, canvas.height - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs * 1 / 6, canvas.height - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs / 2, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.fill()
+                cc.beginPath()
+                cc.moveTo(4 + boxs + 8 + boxs * 5 / 6, canvas.height - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs * 5 / 6, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.fill()
+                /* Drawing for the next-chapter button: */
+                cc.beginPath()
+                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, canvas.height - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.fill()
+                cc.beginPath()
+                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs / 10)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 5 / 6, canvas.height - boxs - 4 + boxs / 2)
+                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, canvas.height - boxs - 4 + boxs - boxs / 10)
+                cc.fill()
+
                 if (found) {
                     cc.textAlign = "left"
                     cc.font = "" + (boxs/2) + "px Arial"
