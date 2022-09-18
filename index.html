@@ -679,10 +679,13 @@ You should have received a copy of the GNU General Public License along with thi
             }
             if (sect[0] == "summary") {
                 if (document.getElementById('summary').checked) {
-                    if ((sect[2]-sect[1]==5 * 60) && did_we_pass_marker(5 * 60)) {
-                        play_notification_sound('instructors_5_minute_summary_sound')
-                    } else if ((sect[2] - sect[1] != 5 * 60) && (sect != previous_sect)) {
-                        play_notification_sound('summary_sound')
+                    const sect_len = sect[2] - sect[1]
+                    if (did_we_pass_marker(sect_len)) {
+                        if (sect_len == 5 * 60) {
+                            play_notification_sound('instructors_5_minute_summary_sound')
+                        } else {
+                            play_notification_sound('summary_sound')
+                        }
                     }
                 }
                 if (did_we_pass_marker(1 * 60) && document.getElementById('instructors_1_minute_summary').checked) {
