@@ -80,7 +80,15 @@
         <input type="checkbox" id="instructors_1_minute" checked><label for="instructors_1_minute">Speak "instructors, 1 minute", before <b>silence</b> ends, if silence is longer than</label> <input type="text" value="3" size="2" id="min_length_for_1min_alert" />minutes<br/>
         <input type="checkbox" id="instructors_1_minute_summary"><label for="instructors_1_minute_summary">Speak "instructors, 1 minute", before <b>summary</b> ends.</label><br/>
         <input type="checkbox" id="summary" checked><label for="summary">Speak "instructors, 5 minute summary", at the beginning of a 5 minute summary section, or "summary" if the summary section has a different length.</label><br/>
-        <input type="checkbox" id="class_ends" checked><label for="class_ends">Speak "class ends" at the end of the class</label><br/>
+        <input type="checkbox" id="sound_at_end" checked><label for="sound_at_end">Sound at the end of the class:</label>
+        <select id="what_to_play_at_end">
+            <option value="drum_sound" selected>Drum</option>
+            <option value="beep_sound">Beep</option>
+            <option value="party_time_sound">Party Time</option>
+            <option value="class_ends_sound">Class Ends</option>
+            <option value="practice_time_sound">Practice Time</option>
+        </select>
+        <br/>
         <input type="checkbox" id="navigation_buttons_enable" checked><label for="navigation_buttons_enable">Enable a navigation buttons on the bottom left corner.</label><br/>
         <h2>Select Music</h2>
         
@@ -130,7 +138,11 @@
     <canvas id="showtime"></canvas>
     <div style="display:none" id="notification_sounds">
         <audio src="sounds/class_begins.mp3" id="class_begins_sound" preload="auto"></audio>
+        <audio src="sounds/drum.mp3" id="drum_sound" preload="auto"></audio>
+        <audio src="sounds/beep.mp3" id="beep_sound" preload="auto"></audio>
         <audio src="sounds/class_ends.mp3" id="class_ends_sound" preload="auto"></audio>
+        <audio src="sounds/party_time.mp3" id="party_time_sound" preload="auto"></audio>
+        <audio src="sounds/practice_time.mp3" id="practice_time_sound" preload="auto"></audio>
         <audio src="sounds/instructors_1_minute.mp3" id="instructors_1_minute_sound" preload="auto"></audio>
         <audio src="sounds/instructors_5_minutes.mp3" id="instructors_5_minutes_sound" preload="auto"></audio>
         <audio src="sounds/instructors_5_minute_summary.mp3" id="instructors_5_minute_summary_sound" preload="auto"></audio>
@@ -679,8 +691,9 @@
                 cc.textBaseline = "middle"
                 cc.fillText("THE END", canvas.width/2, canvas.height/2)
                 if (first_end_frame) {
-                    if (document.getElementById('class_ends').checked) {
-                        document.getElementById('class_ends_sound').play()
+                    if (document.getElementById('sound_at_end').checked) {
+                        let what = document.getElementById('what_to_play_at_end').value
+                        document.getElementById(what).play()
                     }
                     first_end_frame = false
                 }
