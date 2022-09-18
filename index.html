@@ -105,6 +105,7 @@ You should have received a copy of the GNU General Public License along with thi
         </select>
         <br/>
         <input type="checkbox" id="navigation_buttons_enable" checked><label for="navigation_buttons_enable">Enable a navigation buttons on the bottom left corner.</label><br/>
+        <input type="checkbox" id="navigation_keyboard_shortcuts_enable" checked><label for="navigation_keyboard_shortcuts_enable">Enable keyboard shortcuts. (See <a href="https://github.com/purdeaandrei/course_structure/blob/master/README.md#keyboard-shortcuts">here</a>)</label><br/>
         <h2>Select Music</h2>
         
         <label for="filechooser" id="filechooserlabel" class="mybutton">
@@ -254,9 +255,9 @@ You should have received a copy of the GNU General Public License along with thi
             return index
         }
 
-        function play_song_at_index(index) {
+        function play_song_at_index(index, additional_offset = 0) {
             stop_song()
-            all_files[index][1].currentTime = parseFloat(document.querySelectorAll('#music_list .play_offset_seconds')[index].value)
+            all_files[index][1].currentTime = parseFloat(document.querySelectorAll('#music_list .play_offset_seconds')[index].value) + max(additional_offset, 0)
             all_files[index][1].play()
         }
 
@@ -468,6 +469,11 @@ You should have received a copy of the GNU General Public License along with thi
         let pause_time = null
         const click_pause = (ev) => {
             if (paused) {
+                if (pause_time - start_time < 0.1) {
+                    if (document.getElementById('class_begins').checked) {
+                        document.getElementById('class_begins_sound').play()
+                    }
+                }
                 start_time += getTime() - pause_time
                 if (unpause_this_au) {
                     unpause_this_au.play()
@@ -509,6 +515,81 @@ You should have received a copy of the GNU General Public License along with thi
                 start_time = getTime() - structure_expanded[i][2]
             }
         }
+        const click_skip_seconds = (seconds, ev) => {
+            const [i, ofs] = get_current_index_and_offset()
+            if (i===null) return
+            if (paused) {
+                pause_time += seconds
+                const [new_i, new_ofs] = get_current_index_and_offset()
+                if (i != new_i) {
+                    unpause_this_au = null
+                } else {
+                    if (unpause_this_au) {
+                        unpause_this_au.currentTime += seconds
+                    }
+                }
+            } else {
+                start_time -= seconds
+                const [new_i, new_ofs] = get_current_index_and_offset()
+                if (i == new_i) {
+                    for (let i=0;i<all_files.length;i++) {
+                        const au = all_files[i][1];
+                        if ((au.currentTime > 0) && !au.paused && !au.ended) {
+                            au.currentTime += seconds
+                        }
+                    }
+                }
+            }
+        }
+        const click_reverse_seconds = (seconds, ev) => {
+            let [i, ofs] = get_current_index_and_offset()
+            if (i===null) {
+                // hack to make it possible to go back from THE END
+                start_time = getTime() - structure_expanded[structure_expanded.length - 1][2] - 1
+                previous_sect = null
+                previous_sectindex = null
+                first_end_frame = true
+                let new_index_offset = get_current_index_and_offset()
+                i = new_index_offset[0]
+                ofs = new_index_offset[1] + 1
+            }
+            if (paused) {
+                pause_time -= seconds
+                if (pause_time < start_time) {
+                    pause_time = start_time
+                }
+                const [new_i, new_ofs] = get_current_index_and_offset()
+                if (i != new_i) {
+                    unpause_this_au = null
+                } else {
+                    if (unpause_this_au) {
+                        if (unpause_this_au.currentTime > seconds) {
+                            unpause_this_au.currentTime -= seconds
+                        } else {
+                            unpause_this_au.currentTime = 0
+                        }
+                    }
+                }
+            } else {
+                start_time += seconds
+                const current_time = getTime()
+                if (start_time > current_time) {
+                    start_time = current_time - 0.001
+                    if (document.getElementById('class_begins').checked) {
+                        document.getElementById('class_begins_sound').play()
+                    }
+                }
+                const [new_i, new_ofs] = get_current_index_and_offset()
+                if (i == new_i) {
+                    for (let i=0;i<all_files.length;i++) {
+                        const au = all_files[i][1];
+                        if ((au.currentTime > 0) && !au.paused && !au.ended) {
+                            au.currentTime -= seconds
+                        }
+                    }
+                }
+            }
+        }
         const click_skip_prev = (ev) => {
             let [i, ofs] = get_current_index_and_offset()
             if (i === null) {
@@ -516,6 +597,7 @@ You should have received a copy of the GNU General Public License along with thi
                 i = structure_expanded.length
                 ofs = 0
                 previous_sect = null
+                previous_sectindex = null
                 first_end_frame = true
             }
             if (paused) {
@@ -534,12 +616,14 @@ You should have received a copy of the GNU General Public License along with thi
                     if (i>0) {
                         pause_time = structure_expanded[i-1][1] + start_time
                         previous_sect = null // Make it looks like we're jumping from another section
+                        previous_sectindex = null
                     }
                 }
             } else {
-                if (ofs > 2) {
+                if ((ofs > 2) || (i == 0)) {
                     start_time = getTime() - structure_expanded[i][1]
                     previous_sect = null // Make it looks like we're jumping from another section
+                    previous_sectindex = null
                     if (structure_expanded[i][0] == "music") {
                         stop_song();
                     }
@@ -560,6 +644,13 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
         }
+        function toggle_fullscreen() {
+            if (document.fullscreenElement == canvas) {
+                document.exitFullscreen()
+            } else {
+                canvas.requestFullscreen()
+            }
+        }
         canvas.onclick = (ev) => {
             const boxs = max(min(canvas.width, canvas.height) / 9, 30)
             let captured = false
@@ -578,27 +669,23 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             if (!captured) {
-                if (document.fullscreenElement == canvas) {
-                    document.exitFullscreen()
-                } else {
-                    canvas.requestFullscreen()
-                }
+                toggle_fullscreen()
             }
         }
         const cc = canvas.getContext("2d")
         let start_time = 0
         let first_end_frame = true
         let next_song_to_play = 0
-        let previous_left = NaN
         let previous_sect = null
+        let previous_sectindex = null
         let structure_expanded = null
         function getTime () {
             return (new Date()).getTime()/1000
         }
-        function play_sound_if_needed(sect, left) {
+        function play_sound_if_needed(sect, left, sectindex) {
             const did_we_pass_marker = (time) => {
-                return ((sect == previous_sect) && (left <= time) && (previous_left > time)) ||
-                       ((sect != previous_sect) && (left <= time) && (sect[2]-sect[1]+0.0001>=time));
+                return (left <= time) &&
+                       (time - left < 1)
             }
             let minlen = parseInt(document.getElementById('min_length_for_1min_alert').value) * 60;
             if (isNaN(minlen)) minlen = 0
@@ -627,13 +714,12 @@ You should have received a copy of the GNU General Public License along with thi
                 if (all_files.length > 0) {
                     if (next_song_to_play >= all_files.length)
                         next_song_to_play = 0;
-                    play_song_at_index(next_song_to_play);
+                    play_song_at_index(next_song_to_play, sect[2] - sect[1] - left);
                     next_song_to_play += 1
                 }
             }
-
-            previous_left = left
             previous_sect = sect
+            previous_sectindex = sectindex
         }
         function min(a,b) {
             if (a<b) return a
@@ -668,7 +754,7 @@ You should have received a copy of the GNU General Public License along with thi
 
                     if (!paused)
                     {
-                        play_sound_if_needed(sect, left)
+                        play_sound_if_needed(sect, left, ii)
                     }
 
                     let mprogress = (60 - left_min_float) / 60
@@ -920,6 +1006,39 @@ You should have received a copy of the GNU General Public License along with thi
                 resizeCanvas();
                 drawCurrentFrame();
             };
+            if (document.getElementById('navigation_keyboard_shortcuts_enable').checked) {
+                document.addEventListener('keydown', (event) => {
+                    if (event.isComposing || event.keyCode === 229) {
+                        return;
+                    }
+                    switch (event.keyCode) {
+                        case 70: /* F pressed */
+                            toggle_fullscreen()
+                            break
+                        case 32: /* space */
+                            click_pause(event)
+                            break
+                        case 34: /* page-down */
+                            click_skip_prev(event)
+                            break
+                        case 33: /* page-up */
+                            click_skip_next(event)
+                            break
+                        case 39:
+                            click_skip_seconds(10, event)
+                            break
+                        case 37:
+                            click_reverse_seconds(10, event)
+                            break
+                        case 38:
+                            click_skip_seconds(60, event)
+                            break
+                        case 40:
+                            click_reverse_seconds(60, event)
+                            break
+                    }
+                })
+            }
         }
     </script>
   </body>

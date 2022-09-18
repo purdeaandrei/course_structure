@@ -51,6 +51,22 @@ extract it first, before opening index.html.
      folder on your internal storage. Sometimes the top-level access doesn't work,
      but subfolders do.
 
+## Keyboard shortcuts
+
+The keyboard shortcuts (which are only enabled if "Enable keyboard shortcuts" is checked
+on the setup screen) are similar to mplayer's shortcuts:
+
+| Key      | Action                                                                                                                                    |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| F        | Toggle full screen                                                                                                                        |
+| Space    | Play/Pause                                                                                                                                |
+| Right    | Fast forward 10 seconds                                                                                                                   |
+| Left     | Go back 10 seconds                                                                                                                        |
+| Up       | Fast forward 60 seconds                                                                                                                   |
+| Down     | Go Back 60 seconds                                                                                                                        |
+| PageUp   | Jump to the next section                                                                                                                  |
+| PageDown | Jump back to the beginning of the current section, or if close to the beginning of the current section, then jump to the previous section |
+
 ## Credits
 
 The idea for this project is inspired by the "Media West" organization from Israel.
