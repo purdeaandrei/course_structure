@@ -259,8 +259,14 @@ You should have received a copy of the GNU General Public License along with thi
 
         function play_song_at_index(index, additional_offset = 0) {
             stop_song()
-            all_files[index][1].currentTime = parseFloat(document.querySelectorAll('#music_list .play_offset_seconds')[index].value) + max(additional_offset, 0)
-            all_files[index][1].play()
+            let starting_time = parseFloat(document.querySelectorAll('#music_list .play_offset_seconds')[index].value) + max(additional_offset, 0)
+            if (starting_time < 0.1) starting_time = 0
+            if (all_files[index][1].duration > starting_time) {
+                all_files[index][1].currentTime = starting_time
+                all_files[index][1].play()
+            } else {
+                console.log("Error: song " + all_files[index][0] + " was shorter than the desired starting time")
+            }
         }
 
         function get_tr_parent_element(el) {
