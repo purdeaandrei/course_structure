@@ -523,15 +523,9 @@ You should have received a copy of the GNU General Public License along with thi
             return [null, null]
         }
         const click_skip_next = (ev) => {
-            stop_notification_sounds()
             const [i, ofs] = get_current_index_and_offset()
             if (i===null) return
-            if (paused) {
-                pause_time = structure_expanded[i][2] + start_time
-                unpause_this_au = null
-            } else {
-                start_time = getTime() - structure_expanded[i][2]
-            }
+            seek_to_time(structure_expanded[i][2], ev)
         }
         const click_skip_seconds = (seconds, ev) => {
             const new_session_time = max(get_current_session_time() + seconds, 0)
