@@ -113,7 +113,7 @@
         <br />
         <span id="wake_lock_message">Wake lock status: <span id="wake_lock_status">unknown</span></span>
         <br />
-        <a href="http://purdea.ro/save_course_structure.php">Download this tool for offline use (doesn't save changes you made)</a>
+        <a href="http://purdea.ro/save_course_structure.php" id="download_link">Download this tool for offline use (doesn't save changes you made)</a>
         <div id="padding" style="margin-bottom:800px"></div>
     
         <script id="file-template" type="text/template">
@@ -831,6 +831,10 @@
         } else {
             wake_lock_status.innerText = "not supported"
             wake_lock_message.style.color = "red"
+        }
+
+        if (window.location.hostname!="purdea.ro") {
+            document.getElementById("download_link").style.display="none"
         }
 
         function start_showtime() {
