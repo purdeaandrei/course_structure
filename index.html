@@ -111,6 +111,8 @@
         <span id="startbutton" class="mybutton" onclick="start_showtime()">START</span>
         <br />
         <br />
+        <span id="wake_lock_message">Wake lock status: <span id="wake_lock_status">unknown</span></span>
+        <br />
         <a href="http://purdea.ro/save_course_structure.php">Download this tool for offline use (doesn't save changes you made)</a>
         <div id="padding" style="margin-bottom:800px"></div>
     
@@ -773,6 +775,40 @@
                 acc += secs
             }
             return list
+        }
+
+        const wake_lock_message = document.getElementById("wake_lock_message")
+        const wake_lock_status = document.getElementById("wake_lock_status")
+        if ('wakeLock' in navigator) {
+            wake_lock_status.innerText = "request pending"
+            wake_lock_message.style.color = "red"
+            let wake_lock = null;
+            async function request_wake_lock() {
+                try {
+                    wake_lock = await navigator.wakeLock.request('screen')
+                    wake_lock.addEventListener('release', () => {
+                        console.log("wake lock was released")
+                        wake_lock_message.style.color = "red"
+                        wake_lock_status.innerText = "released"
+                    })
+                    console.log("wake lock was acquired")
+                    wake_lock_status.innerText = "OK, appears to have been successfully acquired"
+                    wake_lock_message.style.color = "#00E000"
+                } catch (err) {
+                    console.log("Error while acquiring wake lock")
+                    wake_lock_message.style.color = "red"
+                    wake_lock_status.innerText = "error while acquiring"
+                }
+            }
+            request_wake_lock()
+            document.addEventListener('visibilitychange', async () => {
+                if (document.visibilityState === 'visible') {
+                    request_wake_lock()
+                }
+            })
+        } else {
+            wake_lock_status.innerText = "not supported"
+            wake_lock_message.style.color = "red"
         }
 
         function start_showtime() {
