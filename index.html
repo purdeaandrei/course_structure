@@ -851,8 +851,12 @@
                 }
             })
         } else {
-            wake_lock_status.innerText = "not supported"
             wake_lock_message.style.color = "red"
+            if (window.location.protocol == "http:") {
+                wake_lock_status.innerText = "not supported (could be because this site is being served as non-secure http://. Try downloading, and running locally.)"
+            } else {
+                wake_lock_status.innerText = "not supported"
+            }
         }
 
         if (window.location.hostname!="purdea.ro") {
