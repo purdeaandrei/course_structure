@@ -382,7 +382,8 @@ You should have received a copy of the GNU General Public License along with thi
             let html = template.innerHTML.
                 replaceAll("{{drop-down}}", dropdown).
                 replaceAll("{{minutes}}", "TODO").
-                replaceAll("{{seconds}}", "0")
+                replaceAll("{{seconds}}", "0").
+                replaceAll("disabled", "")
             html = html.trim()
             temp_element.innerHTML = (html).trim()
             let beforeThis = ev.target.parentElement.parentElement
