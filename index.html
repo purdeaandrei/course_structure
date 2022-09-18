@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Course Structure</title>
+    <style type="text/css">
+        .add_button {
+            position: relative;
+            top: -1em;
+        }
+        .bad {
+            background: pink;
+        }
+        #drophere {
+            display:none;
+            position: fixed;
+            top: 25%;
+            left: 25%;
+            background-color: rgba(255,255,255,0.9);
+            z-index: 10000;
+            overflow:auto;
+            width: 50%;
+            height: 50%;
+            //opacity: 0.5;
+            border: 5px solid black;
+            text-align: center;
+        }
+        #drophere b {
+            position: relative;
+            top: 50%;
+        }
+        #music_list {
+            border: 1px solid black;
+            padding: 5px 5px 5px 5px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+        #filechooser {
+            display:none
+        }
+        .mybutton, button {
+            background-color: rgb(220, 220, 220);
+            border: 1px solid grey;
+        }
+        .mybutton {
+            padding: 5px;
+        }
+        .mybutton:hover, button:hover {
+            background-color: rgb(200, 255, 200);
+        }
+        #showtime {
+            display:none
+        }
+        #startbutton {
+            font-size: 2em;
+        }
+    </style>
+
+  </head>
+  <body>
+    <div id="setup">
+        <div id="drophere"><b>You're about to drop a file!</b></div>
+        <h2>Structure</h2>
+        <table id="course-structure-list"></table>
+        <script id="line-template" type="text/template">
+            <tr>
+                <td>
+                <button type="button" class="add_button">+</button>
+                <button type="button" class="remove_button">-</button>
+                </td>
+                <td>{{drop-down}}</td>
+                <td><input type="text" class="structure-line-minutes" size="2" value="{{minutes}}" />:
+                <input type="text" class="structure-line-seconds" size="2" value="{{seconds}}" /></td>
+            </tr>
+        </script>
+        Total course length: <span id="total-length"></span>
+        <h2>Features</h2>
+        <input type="checkbox" id="class_begins" checked><label for="class_begins">Speak "class begins" at the start of the class.</label><br/>
+        <input type="checkbox" id="instructors_5_minutes" checked><label for="instructors_5_minutes">Speak "instructors, 5 minutes", before silence ends.</label><br/>
+        <input type="checkbox" id="instructors_1_minute" checked><label for="instructors_1_minute">Speak "instructors, 1 minute", before <b>silence</b> ends, if silence is longer than</label> <input type="text" value="3" size="2" id="min_length_for_1min_alert" />minutes<br/>
+        <input type="checkbox" id="instructors_1_minute_summary"><label for="instructors_1_minute_summary">Speak "instructors, 1 minute", before <b>summary</b> ends.</label><br/>
+        <input type="checkbox" id="summary" checked><label for="summary">Speak "instructors, 5 minute summary", at the beginning of a 5 minute summary section, or "summary" if the summary section has a different length.</label><br/>
+        <input type="checkbox" id="class_ends" checked><label for="class_ends">Speak "class ends" at the end of the class</label><br/>
+        <input type="checkbox" id="navigation_buttons_enable" checked><label for="navigation_buttons_enable">Enable a navigation buttons on the bottom left corner.</label><br/>
+        <h2>Select Music</h2>
+        
+        <label for="filechooser" id="filechooserlabel" class="mybutton">
+            Click to add music to the playlist
+            <input type="file" id="filechooser" multiple accept="audio/*" onchange="handleFiles(this.files)">
+        </label>
+        <p>note: you can also drag-and-drop over this page</p>
+    
+        <table id="music_list">
+            <tr>
+                <th>Name</th>
+                <th>Duration</th>
+                <th>OffsetSeconds</th>
+                <th>Controls</th>
+            </tr>
+        </table>
+
+        <span id="startbutton" class="mybutton" onclick="start_showtime()">START</span>
+        <br />
+        <br />
+        <a href="http://purdea.ro/save_course_structure.php">Download this tool for offline use (doesn't save changes you made)</a>
+        <div id="padding" style="margin-bottom:800px"></div>
+    
+        <script id="file-template" type="text/template">
+            <tr class="fileline">
+                <td>
+                    {{name}}
+                </td>
+                <td class="duration">
+                    {{duration}}
+                </td>
+                <td>
+                    <input type="text" size="2" value="{{offset}}" class="play_offset_seconds" />
+                </td>
+                <td>
+                    <button type="button" onclick="play_song(event)">&#x25b6;</button> <!--play-->
+                    <button type="button" onclick="stop_song()">&#x25a0;</button> <!--stop-->
+                    <button type="button" onclick="move_up_song(event)">&#x2191;</button> <!--up-->
+                    <button type="button" onclick="move_down_song(event)">&#x2193;</button> <!--down-->
+                    <button type="button" onclick="remove_song(event)">-</button>
+                </td>
+            </tr>
+        </script>
+        
+    </div>
+    <canvas id="showtime"></canvas>
+    <div style="display:none" id="notification_sounds">
+        <audio src="sounds/class_begins.mp3" id="class_begins_sound" preload="auto"></audio>
+        <audio src="sounds/class_ends.mp3" id="class_ends_sound" preload="auto"></audio>
+        <audio src="sounds/instructors_1_minute.mp3" id="instructors_1_minute_sound" preload="auto"></audio>
+        <audio src="sounds/instructors_5_minutes.mp3" id="instructors_5_minutes_sound" preload="auto"></audio>
+        <audio src="sounds/instructors_5_minute_summary.mp3" id="instructors_5_minute_summary_sound" preload="auto"></audio>
+        <audio src="sounds/summary.mp3" id="summary_sound" preload="auto"></audio>
+    </div>
+
+    <script>
+        "use strict"
+        let default_structure = [
+            ["silence", 2, 0],
+            ["music", 2, 0],
+            ["silence", 13, 0],
+            ["music", 2, 0],
+            ["silence", 13, 0],
+            ["music", 2, 0],
+            ["silence", 13, 0],
+            ["music", 2, 0],
+            ["summary", 5, 0]
+        ]
+        let options = [
+            "silence",
+            "music",
+            "summary"
+        ]
+        let body = document.querySelector('body')
+        let drag_counter = 0;
+        body.addEventListener('drop', (ev) => {
+            ev.preventDefault()
+            ev.stopPropagation()
+            document.getElementById('drophere').style.display='none'
+            drag_counter = 0;
+            let dt = ev.dataTransfer
+            let files = dt.files
+            handleFiles(files)
+        }, false)
+        body.addEventListener('dragenter', (ev) => {
+            ev.preventDefault()
+            document.getElementById('drophere').style.display='block'
+            drag_counter += 1
+        }, false)
+        body.addEventListener('dragover', (ev) => {
+            ev.preventDefault()
+            document.getElementById('drophere').style.display='block'
+        }, false)
+        body.addEventListener('dragleave', () => {
+            drag_counter -= 1
+            if (drag_counter < 0) drag_counter = 0;
+            if (drag_counter == 0) {
+                document.getElementById('drophere').style.display='none'
+            }
+        } , false)
+
+        let all_files = [];
+
+        function get_file_index_from_tr(tr_el) {
+            let index = 0
+            let el = tr_el.previousElementSibling
+            while (el) {
+                if (el.classList.contains('fileline')) {
+                    index += 1
+                }
+                el = el.previousElementSibling
+            }
+            return index
+        }
+
+        function play_song_at_index(index) {
+            stop_song()
+            all_files[index][1].currentTime = parseFloat(document.querySelectorAll('#music_list .play_offset_seconds')[index].value)
+            all_files[index][1].play()
+        }
+
+        function play_song(ev) {
+            const tr = ev.target.parentElement.parentElement
+            const index = get_file_index_from_tr(tr)
+            stop_song()
+            all_files[index][1].currentTime = parseFloat(tr.querySelector('.play_offset_seconds').value)
+            all_files[index][1].play()
+        }
+        function stop_song() {
+            for (const file of all_files) {
+                if (file != null) {
+                    if (!file[1].paused && !file[1].ended && (file[1].currentTime>0)) {
+                        file[1].pause()
+                        file[1].currentTime = 0
+                    }
+                }
+            }
+        }
+        function remove_song(ev) {
+            const tr = ev.target.parentElement.parentElement
+            const index = get_file_index_from_tr(tr)
+            tr.remove()
+            all_files.splice(index, 1)
+        }
+        function move_up_song(ev) {
+            const tr = ev.target.parentElement.parentElement
+            const index = get_file_index_from_tr(tr)
+            if (index > 0) {
+                const before = tr.previousElementSibling
+                if (before.classList.contains('fileline')) {
+                    const parent = before.parentElement
+                    parent.insertBefore(tr, before)
+                    const t = all_files[index]
+                    all_files[index] = all_files[index-1]
+                    all_files[index-1] = t
+                }
+            }
+        }
+        function move_down_song(ev) {
+            const tr = ev.target.parentElement.parentElement
+            const index = get_file_index_from_tr(tr)
+            if (index < all_files.length - 1) {
+                const next = tr.nextElementSibling
+                if (next.classList.contains('fileline')) {
+                    const parent = next.parentElement
+                    parent.insertBefore(tr, next.nextSibling) // works with the final element too because insertBefore with a null reference will just append to the end
+                    const t = all_files[index]
+                    all_files[index] = all_files[index+1]
+                    all_files[index+1] = t
+                }
+            }
+        }
+
+        function minutes_seconds(seconds) {
+            if (isNaN(seconds)) return "..."
+            seconds = parseInt(seconds)
+            let minutes = parseInt(seconds / 60)
+            seconds = seconds % 60
+            if (seconds < 10)
+                return minutes + ":0" + seconds
+            else
+                return minutes + ":" + seconds
+        }
+
+        function display_file(name, duration) {
+            let temp_element = document.createElement('template')
+            temp_element.innerHTML = document.getElementById("file-template").innerHTML.
+                replaceAll("{{name}}", name).
+                replaceAll("{{duration}}", minutes_seconds(duration)).
+                replaceAll("{{offset}}", "0").
+                trim()
+            document.getElementById('music_list').appendChild(temp_element.content);
+        }
+
+        function handleFiles(files) {
+            for (const file of files) {
+                const url = URL.createObjectURL(file)
+                const a = new Audio(url)
+                a.addEventListener('durationchange', ev => {
+                    for (let i=0;i<all_files.length;i++) {
+                        if (all_files[i][1] == a) {
+                            document.querySelectorAll('#music_list .fileline .duration')[i].innerText = minutes_seconds(a.duration)
+                        }
+                    }
+                })
+                display_file(file.name, a.duration)
+                all_files.push([file.name, a, 0])
+            }
+            document.getElementById("filechooser").value=""
+        }
+
+        function remove_item(ev) {
+            ev.target.parentElement.parentElement.remove()
+            refresh_timer_and_checks()
+        }
+
+        function add_item(ev) {
+            const template = document.getElementById("line-template")
+            let dropdown = "<select>"
+            for (const opt of options)
+            {
+                let selected = ""
+                //if (opt == item[0]) selected = " selected"
+                dropdown += '<option value="' + opt + '"' + selected + '>' + opt + '</option>'
+            }
+            dropdown += '</select>'
+            let temp_element = document.createElement('template')
+            let html = template.innerHTML.
+                replaceAll("{{drop-down}}", dropdown).
+                replaceAll("{{minutes}}", "TODO").
+                replaceAll("{{seconds}}", "0")
+            html = html.trim()
+            temp_element.innerHTML = (html).trim()
+            let beforeThis = ev.target.parentElement.parentElement
+            beforeThis.parentElement.insertBefore(temp_element.content.firstChild, beforeThis)
+            refresh_event_listeners()
+            refresh_timer_and_checks()
+        }
+
+        function refresh_event_listeners() {
+            for (const element of document.querySelectorAll("#course-structure-list .remove_button")) {
+                element.onclick = remove_item
+            }
+            for (const element of document.querySelectorAll("#course-structure-list .add_button")) {
+                element.onclick = add_item
+            }
+            for (const element of document.querySelectorAll("#course-structure-list input")) {
+                element.oninput = refresh_timer_and_checks
+            }
+        }
+
+        function refresh_timer_and_checks() {
+            let minutes = 0
+            for (const element of document.querySelectorAll("#course-structure-list .structure-line-minutes")) {
+                if (/^\s*\d+\s*$/.test(element.value)) {
+                    minutes += parseInt(element.value)
+                    element.classList.remove("bad")
+                } else {
+                    element.classList.add("bad")
+                }
+            }
+            let seconds = 0
+            for (const element of document.querySelectorAll("#course-structure-list .structure-line-seconds")) {
+                if (/^\s*\d+\s*$/.test(element.value)) {
+                    seconds += parseInt(element.value)
+                    element.classList.remove("bad")
+                } else {
+                    element.classList.add("bad")
+                }
+            }
+            minutes += Math.floor(seconds / 60)
+            seconds %= 60
+            document.getElementById("total-length").innerText = minutes + ":" + seconds
+        }
+
+        function display_structure(structure) {
+            const content = document.getElementById("course-structure-list")
+            const template = document.getElementById("line-template")
+            let html = "<tr><th>Edit</th><th>Type</th><th>Minutes:Seconds</th></tr>"
+            html += "<tr><td>&nbsp</td></tr>"
+            for (const item of structure)
+            {
+                let dropdown = "<select>"
+                for (const opt of options)
+                {
+                    let selected = ""
+                    if (opt == item[0]) selected = " selected"
+                    dropdown += '<option value="' + opt + '"' + selected + '>' + opt + '</option>'
+                }
+                dropdown += '</select>'
+                html += template.innerHTML.
+                    replaceAll("{{drop-down}}", dropdown).
+                    replaceAll("{{minutes}}", item[1]).
+                    replaceAll("{{seconds}}", item[2])
+            }
+            html += '<tr><td><button type="button" class="add_button">+</button></tr>'
+            content.innerHTML = html
+            refresh_event_listeners()
+            refresh_timer_and_checks()
+        }
+        display_structure(default_structure)
+        const canvas = document.querySelector("#showtime")
+        let paused = false;
+        let unpause_this_au = null
+        let pause_time = null
+        const click_pause = (ev) => {
+            if (paused) {
+                start_time += getTime() - pause_time
+                if (unpause_this_au) {
+                    unpause_this_au.play()
+                }
+            } else {
+                unpause_this_au = null
+                for (let i=0;i<all_files.length;i++) {
+                    const au = all_files[i][1];
+                    if ((au.currentTime > 0) && !au.paused && !au.ended) {
+                        au.pause()
+                        unpause_this_au = au
+                        break
+                    }
+                }
+                pause_time = getTime()
+            }
+            paused = !paused;
+        }
+        const get_current_index_and_offset = () => {
+            let time = getTime() - start_time
+            if (paused) {
+                time = pause_time - start_time
+            }
+            for (let i=0;i<structure_expanded.length;i++) {
+                let sect = structure_expanded[i];
+                if ((time >= sect[1]) && (time < sect[2])) {
+                    return [i, time - sect[1]]
+                }
+            }
+            return [null, null]
+        }
+        const click_skip_next = (ev) => {
+            const [i, ofs] = get_current_index_and_offset()
+            if (i===null) return
+            if (paused) {
+                pause_time = structure_expanded[i][2] + start_time
+                unpause_this_au = null
+            } else {
+                start_time = getTime() - structure_expanded[i][2]
+            }
+        }
+        const click_skip_prev = (ev) => {
+            let [i, ofs] = get_current_index_and_offset()
+            if (i === null) {
+                // hack to make it possible to go back from THE END
+                i = structure_expanded.length
+                ofs = 0
+                previous_sect = null
+                first_end_frame = true
+            }
+            if (paused) {
+                if (unpause_this_au) {
+                    if (ofs > 2) {
+                        unpause_this_au.currentTime = 0
+                    } else {
+                        if (i > 0) {
+                            unpause_this_au = null
+                        }
+                    }
+                }
+                if (ofs > 2) {
+                    pause_time = structure_expanded[i][1] + start_time
+                } else {
+                    if (i>0) {
+                        pause_time = structure_expanded[i-1][1] + start_time
+                        previous_sect = null // Make it looks like we're jumping from another section
+                    }
+                }
+            } else {
+                if (ofs > 2) {
+                    start_time = getTime() - structure_expanded[i][1]
+                    previous_sect = null // Make it looks like we're jumping from another section
+                    if (structure_expanded[i][0] == "music") {
+                        stop_song();
+                    }
+                    if (i == 0) {
+                        if (document.getElementById('class_begins').checked) {
+                            document.getElementById('class_begins_sound').play()
+                        }
+                    }
+                } else {
+                    if (i>0) {
+                        start_time = getTime() - structure_expanded[i-1][1]
+                        if (i-1 == 0) {
+                            if (document.getElementById('class_begins').checked) {
+                                document.getElementById('class_begins_sound').play()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        canvas.onclick = (ev) => {
+            const boxs = max(min(canvas.width, canvas.height) / 9, 30)
+            let captured = false
+            if (document.getElementById('navigation_buttons_enable').checked) {
+                if (ev.clientY > canvas.height-boxs-4) {
+                    if (ev.clientX < boxs + 4) {
+                        click_pause(ev)
+                        captured = true
+                    } else if ((ev.clientX < 4 + boxs + 8 + boxs)) {
+                        click_skip_prev(ev)
+                        captured = true
+                    } else if ((ev.clientX < 4 + boxs + 8 + boxs + 8 + boxs)) {
+                        click_skip_next(ev)
+                        captured = true
+                    }
+                }
+            }
+            if (!captured) {
+                if (document.fullscreenElement == canvas) {
+                    document.exitFullscreen()
+                } else {
+                    canvas.requestFullscreen()
+                }
+            }
+        }
+        const cc = canvas.getContext("2d")
+        let start_time = 0
+        let first_end_frame = true
+        let next_song_to_play = 0
+        let previous_left = NaN
+        let previous_sect = null
+        let structure_expanded = null
+        function getTime () {
+            return (new Date()).getTime()/1000
+        }
+        function play_sound_if_needed(sect, left) {
+            const did_we_pass_marker = (time) => {
+                return ((sect == previous_sect) && (left <= time) && (previous_left > time)) ||
+                       ((sect != previous_sect) && (left <= time) && (sect[2]-sect[1]+0.0001>=time));
+            }
+            let minlen = parseInt(document.getElementById('min_length_for_1min_alert').value) * 60;
+            if (isNaN(minlen)) minlen = 0
+            if (sect[0] == "silence") {
+                if (did_we_pass_marker(5 * 60) && document.getElementById('instructors_5_minutes').checked) {
+                    document.getElementById('instructors_5_minutes_sound').play()
+                }
+                if ((sect[2] - sect[1] >= minlen) && did_we_pass_marker(1 * 60) && document.getElementById('instructors_1_minute').checked) {
+                    document.getElementById('instructors_1_minute_sound').play()
+                }
+            }
+            if (sect[0] == "summary") {
+                if (document.getElementById('summary').checked) {
+                    if ((sect[2]-sect[1]==5 * 60) && did_we_pass_marker(5 * 60)) {
+                        document.getElementById('instructors_5_minute_summary_sound').play()
+                    } else if ((sect[2] - sect[1] != 5 * 60) && (sect != previous_sect)) {
+                        document.getElementById('summary_sound').play()
+                    }
+                }
+                if (did_we_pass_marker(1 * 60) && document.getElementById('instructors_1_minute_summary').checked) {
+                    document.getElementById('instructors_1_minute_sound').play()
+                }
+            }
+            if (previous_sect && (previous_sect[0] == "music") && (sect[0] != "music")) stop_song();
+            if ((sect[0] == "music") && (sect != previous_sect)) {
+                if (all_files.length > 0) {
+                    if (next_song_to_play >= all_files.length)
+                        next_song_to_play = 0;
+                    play_song_at_index(next_song_to_play);
+                    next_song_to_play += 1
+                }
+            }
+
+            previous_left = left
+            previous_sect = sect
+        }
+        function min(a,b) {
+            if (a<b) return a
+            return b
+        }
+        function max(a,b) {
+            if (a>b) return a
+            return b
+        }
+        function drawCurrentFrame() {
+            let time = getTime() - start_time
+            if (paused) {
+                time = pause_time - start_time
+            }
+            
+            cc.fillStyle="black"
+            cc.fillRect(0, 0, canvas.width, canvas.height)
+            cc.fillStyle="white"
+            
+            let found = false
+            let ii = 0
+            let sect = null
+            for (ii = 0; ii<structure_expanded.length; ii++) {
+                sect = structure_expanded[ii]
+                if ((time >= sect[1]) && (time < sect[2])) {
+                    let len = sect[2] - sect[1]
+                    let pos = time - sect[1]
+                    let left = len - pos
+                    let left_min_float = left / 60
+                    let left_min = parseInt(left_min_float)
+                    let left_sec = left - left_min * 60
+
+                    if (!paused)
+                    {
+                        play_sound_if_needed(sect, left)
+                    }
+
+                    let mprogress = (60 - left_min_float) / 60
+                    
+                    // These are the 16:9 aspect ratio variants
+                    let x = canvas.width - 20
+                    let y = canvas.height / 2
+                    let r = min(canvas.width, canvas.height / 2)
+                    let tx = (canvas.width - canvas.height/2) / 2
+                    let ty = canvas.height / 2
+                    let fontsize = Math.floor(canvas.width * 0.25)
+
+                    cc.textAlign = "center"
+                    cc.textBaseline = "middle"
+                    
+                    const ratio = canvas.width/canvas.height
+
+                    if (left >= 60) {
+                        if (ratio < 0.9124767225325885) {
+                            y = canvas.height * 74 / 100
+                            fontsize = canvas.height * 0.25
+                            ty = fontsize / 2 * 1.2
+                            tx = canvas.width / 2
+                            if (ratio < 0.6444981862152358) {
+                                fontsize = canvas.width * 0.35
+
+                            }
+                        } else if (ratio < 1.3824975417895773) {
+                            y = canvas.height * 74 / 100
+                            ty = canvas.height / 3
+                            tx = canvas.width * 34 / 100
+                        }
+                    } else {
+                        mprogress = (60 - left)/ 60
+                        cc.fillStyle="red"
+                        
+                        tx = 10
+                        ty = 10
+                        
+                        if (ratio > 1) {
+                            r = min(canvas.width / 4, canvas.height / 2)
+                            cc.textAlign = "left"
+                            cc.textBaseline = "top"
+                            y = canvas.height - r
+                        } else {
+                            r = min((canvas.width - 20) / 2, canvas.height * 60 / 100 / 2)
+                            y = canvas.height - r - 10
+                            tx = canvas.width / 2
+                            ty = canvas.height / 4
+                            fontsize = Math.floor(canvas.width * 0.45)
+                        }
+                        x = canvas.width - r - 10
+                        
+                    }
+
+                    cc.beginPath()
+                    cc.arc(x, y, r * 0.8, Math.PI/2*3 + Math.PI * 2 * mprogress, Math.PI/2*3 + Math.PI * 2)
+                    cc.lineTo(x, y)
+                    cc.fill()
+
+                    const drawTick = (angle) => {
+                        cc.beginPath()
+                        cc.arc(x, y, r*0.95, angle - Math.PI/180, angle + Math.PI/180, false)
+                        cc.arc(x, y, r*0.85, angle + Math.PI/180, angle - Math.PI/180, true)
+                        cc.fill()
+                    }
+                    for (let i=0; i<12; i++)
+                        drawTick(Math.PI/2*3 + Math.PI * 2 - Math.PI / 2 / 3 * i)
+                    cc.strokeStyle = cc.fillStyle
+                    cc.lineWidth = 3.
+                    cc.beginPath()
+                    cc.arc(x, y, r * 0.95, 0, 2 * Math.PI)
+                    cc.stroke()
+
+                    cc.font = "" + fontsize + "px Arial"
+                    
+                    cc.fillText(minutes_seconds(left), tx, ty)
+
+                    found = true
+                    break
+                }
+            }
+            if (!found) {
+                let fontsize = Math.floor(canvas.width * 0.10)
+                cc.font = "" + fontsize + "px Arial"
+                cc.textAlign = "center"
+                cc.textBaseline = "middle"
+                cc.fillText("THE END", canvas.width/2, canvas.height/2)
+                if (first_end_frame) {
+                    if (document.getElementById('class_ends').checked) {
+                        document.getElementById('class_ends_sound').play()
+                    }
+                    first_end_frame = false
+                }
+            }
+            if (document.getElementById('navigation_buttons_enable').checked) {
+                const boxs = max(min(canvas.width, canvas.height) / 9, 30)
+                const h = boxs * 7 / 10
+                const w = boxs * 2 / 10
+                const d = boxs * 2 / 10
+                if (paused) {
+                    cc.fillStyle="rgba(255,255,255,1)"
+                } else {
+                    cc.fillStyle="rgba(255,255,255,0.2)"
+                }
+                cc.strokeStyle=cc.fillStyle
+                cc.strokeRect(4, canvas.height-boxs-4, boxs, boxs)
+                cc.fillRect(4 + (boxs-(w*2 + d))/2, canvas.height-boxs-4 + (boxs - h)/2, w, h)
+                cc.fillRect(4 + (boxs-(w*2 + d))/2 + w + d, canvas.height-boxs-4 + (boxs - h)/2, w, h)
+                cc.fillStyle="rgba(255,255,255,0.2)"
+                cc.strokeStyle=cc.fillStyle
+                cc.strokeRect(4 + boxs + 8, canvas.height-boxs-4, boxs, boxs)
+                cc.strokeRect(4 + boxs + 8 + boxs + 8, canvas.height-boxs-4, boxs, boxs)
+                cc.font = "" + boxs + "px Arial"
+                cc.textAlign = "center"
+                cc.textBaseline = "middle"
+                cc.fillText("\u23EE", 4 + boxs + 8 + boxs/2, canvas.height-boxs-4 + boxs/2)
+                cc.fillText("\u23ED", 4 + boxs + 8 + boxs + 8 + boxs/2, canvas.height-boxs-4 + boxs/2)
+                if (found) {
+                    cc.textAlign = "left"
+                    cc.font = "" + (boxs/2) + "px Arial"
+                    cc.fillText("" + ii + ": " + sect[0], 4 + boxs + 8 + boxs + 8 + boxs + 10, canvas.height-boxs-4 + boxs*3/4)
+                }
+            }
+        }
+        const anim = () => {
+            drawCurrentFrame()
+            requestAnimationFrame(anim)
+        }
+        
+        const resizeCanvas = () => {
+            let w = window.innerWidth - 10;
+            let h = window.innerHeight - 20;
+            canvas.style.position="absolute";
+            canvas.style.left="" + ((window.innerWidth - w) / 2) + "px";
+            canvas.width = w;
+            canvas.height = h;
+        };
+
+        function getCurrentStructure() {
+            let list = []
+            for (const tr of document.querySelectorAll("#course-structure-list tr")) {
+                const sel = tr.querySelector("select")
+                if (sel) {
+                    const min = parseFloat(tr.querySelector(".structure-line-minutes").value)
+                    const sec = parseFloat(tr.querySelector(".structure-line-seconds").value)
+                    list.push([sel.value, min, sec])
+                }
+            }
+            return list
+        }
+
+        function expandStructure(structure) {
+            let acc = 0
+            let list = []
+            for (let i=0;i<structure.length;i++) {
+                const secs = structure[i][1] * 60 + structure[i][2]
+                list.push([structure[i][0], acc, acc+secs])
+                acc += secs
+            }
+            return list
+        }
+
+        function start_showtime() {
+            if (all_files.length==0) {
+                alert("ERROR: you must have at least one song added to the playlist!")
+                return
+            }
+            stop_song()
+            structure_expanded = expandStructure(getCurrentStructure())
+            document.querySelector("#setup").style.display="none"
+            canvas.style.display="block"
+            document.body.style.background="black"
+            start_time = getTime()
+            paused = false
+            next_song_to_play = 0
+            first_end_frame = true
+            if (document.getElementById('class_begins').checked) {
+                document.getElementById('class_begins_sound').play()
+            }
+            resizeCanvas();
+            anim()
+            window.onresize = () => {
+                resizeCanvas();
+                drawCurrentFrame();
+            };
+        }
+    </script>
+  </body>
+</html>
