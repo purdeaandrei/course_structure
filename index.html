@@ -128,10 +128,32 @@
                     <input type="text" size="2" value="{{offset}}" class="play_offset_seconds" />
                 </td>
                 <td>
-                    <button type="button" onclick="play_song(event)">&#x25b6;</button> <!--play-->
-                    <button type="button" onclick="stop_song()">&#x25a0;</button> <!--stop-->
-                    <button type="button" onclick="move_up_song(event)">&#x2191;</button> <!--up-->
-                    <button type="button" onclick="move_down_song(event)">&#x2193;</button> <!--down-->
+                    <button type="button" onclick="play_song(event)">
+                        <svg width="0.7em" height="0.7em">
+                            <svg viewBox="0 0 1 1" height="0.7em" width="0.7em">
+                                <polygon points="0,0 0,1 0.7,0.5" />
+                            </svg>
+                        </svg>
+                    </button> <!--play-->
+                    <button type="button" onclick="stop_song()">
+                        <svg width="0.6em" height="0.6em">
+                            <rect width="0.6em" height="0.6em" />
+                        </svg>
+                    </button> <!--stop-->
+                    <button type="button" onclick="move_up_song(event)">
+                        <svg width="0.7em" height="0.7em">
+                            <svg viewBox="0 0 1 1" height="0.7em" width="0.7em">
+                                <polygon points="0,0.7 1,0.7 0.5,0" />
+                            </svg>
+                        </svg>
+                    </button> <!--up-->
+                    <button type="button" onclick="move_down_song(event)">
+                        <svg width="0.7em" height="0.7em">
+                            <svg viewBox="0 0 1 1" height="0.7em" width="0.7em">
+                                <polygon points="0,0.3 1,0.3 0.5,1" />
+                            </svg>
+                        </svg>
+                    </button> <!--down-->
                     <button type="button" onclick="remove_song(event)">-</button>
                 </td>
             </tr>
