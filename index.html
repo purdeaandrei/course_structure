@@ -530,11 +530,6 @@ You should have received a copy of the GNU General Public License along with thi
         const click_reverse_seconds = (seconds, ev) => {
             const new_session_time = max(get_current_session_time() - seconds, 0)
             seek_to_time(new_session_time, ev)
-            if (!paused && new_session_time < 0.001) {
-                if (document.getElementById('class_begins').checked) {
-                    play_notification_sound('class_begins_sound')
-                }
-            }
         }
         const seek_to_time = (time, ev) => {
             const current_time = getTime()
@@ -545,6 +540,11 @@ You should have received a copy of the GNU General Public License along with thi
             previous_sect = null
             previous_sectindex = null
             first_end_frame = true
+            if (!paused && time < 0.001) {
+                if (document.getElementById('class_begins').checked) {
+                    play_notification_sound('class_begins_sound')
+                }
+            }
         }
         const click_skip_prev = (ev) => {
             let [i, ofs] = get_current_index_and_offset()
