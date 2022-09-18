@@ -557,55 +557,13 @@ You should have received a copy of the GNU General Public License along with thi
             }
         }
         const click_skip_prev = (ev) => {
-            stop_notification_sounds()
-            let [i, ofs] = get_current_index_and_offset()
-            if (i === null) {
-                // hack to make it possible to go back from THE END
-                i = structure_expanded.length
-                ofs = 0
-                previous_sect = null
-                first_end_frame = true
-            }
-            if (paused) {
-                if (unpause_this_au) {
-                    if (ofs > 2) {
-                        unpause_this_au.currentTime = 0
-                    } else {
-                        if (i > 0) {
-                            unpause_this_au = null
-                        }
-                    }
-                }
-                if (ofs > 2) {
-                    pause_time = structure_expanded[i][1] + start_time
-                } else {
-                    if (i>0) {
-                        pause_time = structure_expanded[i-1][1] + start_time
-                        previous_sect = null // Make it looks like we're jumping from another section
-                    }
-                }
+            const [i, ofs] = get_current_index_and_offset()
+            if (i===null) {
+                seek_to_time(structure_expanded[structure_expanded.length - 1][1], ev)
+            } else if ((ofs > 2) || (i == 0)) {
+                seek_to_time(structure_expanded[i][1], ev)
             } else {
-                if ((ofs > 2) || (i == 0)) {
-                    start_time = getTime() - structure_expanded[i][1]
-                    previous_sect = null // Make it looks like we're jumping from another section
-                    if (structure_expanded[i][0] == "music") {
-                        stop_song();
-                    }
-                    if (i == 0) {
-                        if (document.getElementById('class_begins').checked) {
-                            play_notification_sound('class_begins_sound')
-                        }
-                    }
-                } else {
-                    if (i>0) {
-                        start_time = getTime() - structure_expanded[i-1][1]
-                        if (i-1 == 0) {
-                            if (document.getElementById('class_begins').checked) {
-                                play_notification_sound('class_begins_sound')
-                            }
-                        }
-                    }
-                }
+                seek_to_time(structure_expanded[i-1][1], ev)
             }
         }
         function toggle_fullscreen() {
