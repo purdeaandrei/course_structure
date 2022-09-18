@@ -113,7 +113,10 @@
         <br />
         <span id="wake_lock_message">Wake lock status: <span id="wake_lock_status">unknown</span></span>
         <br />
-        <a href="https://github.com/purdeaandrei/course_structure/archive/refs/heads/master.zip" id="download_link">Download this tool for offline use (doesn't save changes you made)</a>
+        <div id="network_links">
+            <a href="https://github.com/purdeaandrei/course_structure/archive/refs/heads/master.zip" id="download_link">Download this tool for offline use</a>(doesn't save changes you made)
+            <a href="https://github.com/purdeaandrei/course_structure">Contribute</a>
+        </div>
         <div id="padding" style="margin-bottom:800px"></div>
     
         <script id="file-template" type="text/template">
@@ -860,7 +863,7 @@
         }
 
         if (window.location.hostname!="purdeaandrei.github.io") {
-            document.getElementById("download_link").style.display="none"
+            document.getElementById("network_links").style.display="none"
         }
 
         function start_showtime() {
