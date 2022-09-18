@@ -50,3 +50,8 @@ extract it first, before opening index.html.
    * file:///storage/emulated/0/SOMEFOLDER/ (replace SOMEFOLDER as a name of a known
      folder on your internal storage. Sometimes the top-level access doesn't work,
      but subfolders do.
+
+## Credits
+
+The idea for this project is inspired by the "Media West" organization from Israel.
+(We do not imply their endorsement, we're just giving credit)
