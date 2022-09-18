@@ -250,8 +250,15 @@
             all_files[index][1].play()
         }
 
+        function get_tr_parent_element(el) {
+            while (el != null && el.tagName != "TR") {
+                el = el.parentElement
+            }
+            return el
+        }
+
         function play_song(ev) {
-            const tr = ev.target.parentElement.parentElement
+            const tr = get_tr_parent_element(ev.target)
             const index = get_file_index_from_tr(tr)
             stop_song()
             all_files[index][1].currentTime = parseFloat(tr.querySelector('.play_offset_seconds').value)
@@ -268,7 +275,7 @@
             }
         }
         function remove_song(ev) {
-            const tr = ev.target.parentElement.parentElement
+            const tr = get_tr_parent_element(ev.target)
             const index = get_file_index_from_tr(tr)
             tr.remove()
             all_files.splice(index, 1)
@@ -278,7 +285,7 @@
             }
         }
         function move_up_song(ev) {
-            const tr = ev.target.parentElement.parentElement
+            const tr = get_tr_parent_element(ev.target)
             const index = get_file_index_from_tr(tr)
             if (index > 0) {
                 const before = tr.previousElementSibling
@@ -292,7 +299,7 @@
             }
         }
         function move_down_song(ev) {
-            const tr = ev.target.parentElement.parentElement
+            const tr = get_tr_parent_element(ev.target)
             const index = get_file_index_from_tr(tr)
             if (index < all_files.length - 1) {
                 const next = tr.nextElementSibling
