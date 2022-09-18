@@ -35,6 +35,9 @@
             margin-top: 10px;
             margin-bottom: 10px;
         }
+        .hidden {
+            display: none;
+        }
         #filechooser {
             display:none
         }
@@ -100,7 +103,7 @@
         </label>
         <p>note: you can also drag-and-drop over this page</p>
     
-        <table id="music_list">
+        <table id="music_list" class="hidden">
             <tr>
                 <th>Name</th>
                 <th>Duration</th>
@@ -269,6 +272,10 @@
             const index = get_file_index_from_tr(tr)
             tr.remove()
             all_files.splice(index, 1)
+            if (all_files.length == 0) {
+                const music_list = document.getElementById('music_list')
+                music_list.classList.add("hidden")
+            }
         }
         function move_up_song(ev) {
             const tr = ev.target.parentElement.parentElement
@@ -311,13 +318,15 @@
         }
 
         function display_file(name, duration) {
-            let temp_element = document.createElement('template')
+            const temp_element = document.createElement('template')
+            const music_list = document.getElementById('music_list')
+            music_list.classList.remove("hidden")
             temp_element.innerHTML = document.getElementById("file-template").innerHTML.
                 replaceAll("{{name}}", name).
                 replaceAll("{{duration}}", minutes_seconds(duration)).
                 replaceAll("{{offset}}", "0").
                 trim()
-            document.getElementById('music_list').appendChild(temp_element.content);
+            music_list.appendChild(temp_element.content);
         }
 
         function handleFiles(files) {
