@@ -464,6 +464,9 @@ You should have received a copy of the GNU General Public License along with thi
             refresh_event_listeners()
             refresh_timer_and_checks()
         }
+        function play_notification_sound(audio_id) {
+            document.getElementById(audio_id).play()
+        }
         display_structure(default_structure)
         const canvas = document.querySelector("#showtime")
         let paused = false;
@@ -473,7 +476,7 @@ You should have received a copy of the GNU General Public License along with thi
             if (paused) {
                 if (pause_time - start_time < 0.1) {
                     if (document.getElementById('class_begins').checked) {
-                        document.getElementById('class_begins_sound').play()
+                        play_notification_sound('class_begins_sound')
                     }
                 }
                 start_time += getTime() - pause_time
@@ -578,7 +581,7 @@ You should have received a copy of the GNU General Public License along with thi
                 if (start_time > current_time) {
                     start_time = current_time - 0.001
                     if (document.getElementById('class_begins').checked) {
-                        document.getElementById('class_begins_sound').play()
+                        play_notification_sound('class_begins_sound')
                     }
                 }
                 const [new_i, new_ofs] = get_current_index_and_offset()
@@ -640,7 +643,7 @@ You should have received a copy of the GNU General Public License along with thi
                     }
                     if (i == 0) {
                         if (document.getElementById('class_begins').checked) {
-                            document.getElementById('class_begins_sound').play()
+                            play_notification_sound('class_begins_sound')
                         }
                     }
                 } else {
@@ -648,7 +651,7 @@ You should have received a copy of the GNU General Public License along with thi
                         start_time = getTime() - structure_expanded[i-1][1]
                         if (i-1 == 0) {
                             if (document.getElementById('class_begins').checked) {
-                                document.getElementById('class_begins_sound').play()
+                                play_notification_sound('class_begins_sound')
                             }
                         }
                     }
@@ -719,22 +722,22 @@ You should have received a copy of the GNU General Public License along with thi
             if (isNaN(minlen)) minlen = 0
             if (sect[0] == "silence") {
                 if (did_we_pass_marker(5 * 60) && document.getElementById('instructors_5_minutes').checked) {
-                    document.getElementById('instructors_5_minutes_sound').play()
+                    play_notification_sound('instructors_5_minutes_sound')
                 }
                 if ((sect[2] - sect[1] >= minlen) && did_we_pass_marker(1 * 60) && document.getElementById('instructors_1_minute').checked) {
-                    document.getElementById('instructors_1_minute_sound').play()
+                    play_notification_sound('instructors_1_minute_sound')
                 }
             }
             if (sect[0] == "summary") {
                 if (document.getElementById('summary').checked) {
                     if ((sect[2]-sect[1]==5 * 60) && did_we_pass_marker(5 * 60)) {
-                        document.getElementById('instructors_5_minute_summary_sound').play()
+                        play_notification_sound('instructors_5_minute_summary_sound')
                     } else if ((sect[2] - sect[1] != 5 * 60) && (sect != previous_sect)) {
-                        document.getElementById('summary_sound').play()
+                        play_notification_sound('summary_sound')
                     }
                 }
                 if (did_we_pass_marker(1 * 60) && document.getElementById('instructors_1_minute_summary').checked) {
-                    document.getElementById('instructors_1_minute_sound').play()
+                    play_notification_sound('instructors_1_minute_sound')
                 }
             }
             if (previous_sect && (previous_sect[0] == "music") && (sect[0] != "music")) stop_song();
@@ -938,7 +941,7 @@ You should have received a copy of the GNU General Public License along with thi
                 if (first_end_frame) {
                     if (document.getElementById('sound_at_end').checked) {
                         let what = document.getElementById('what_to_play_at_end').value
-                        document.getElementById(what).play()
+                        play_notification_sound(what)
                     }
                     first_end_frame = false
                 }
@@ -1097,7 +1100,7 @@ You should have received a copy of the GNU General Public License along with thi
             paused = false
             first_end_frame = true
             if (document.getElementById('class_begins').checked) {
-                document.getElementById('class_begins_sound').play()
+                play_notification_sound('class_begins_sound')
             }
             document.getElementsByTagName('body')[0].style.margin="0 0 0 0"
             resizeCanvas();
