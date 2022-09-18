@@ -109,11 +109,11 @@ You should have received a copy of the GNU General Public License along with thi
         <input type="checkbox" id="show_progress_bar" checked onclick="show_progress_bar_onclick()"><label for="show_progress_bar">Show progress bar</label><br/>
         &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="progress_bar_seeking_enabled" checked><label for="progress_bar_seeking_enabled">Allow seeking by clicking the progress bar</label><br/>
         <h2>Select Music</h2>
-        
-        <label for="filechooser" id="filechooserlabel" class="mybutton">
+
+        <input type="file" id="filechooser" multiple accept="audio/*" onchange="handleFiles(this.files)">
+        <button type="button" onclick="document.getElementById('filechooser').click()" class="mybutton">
             Click to add music to the playlist
-            <input type="file" id="filechooser" multiple accept="audio/*" onchange="handleFiles(this.files)">
-        </label>
+        </button>
         <p>note: you can also drag-and-drop over this page</p>
     
         <table id="music_list" class="hidden">
