@@ -708,6 +708,7 @@ You should have received a copy of the GNU General Public License along with thi
         }
         let last_canvasX = null
         let last_canvasY = null
+        let touch_device = false
         function drawCurrentFrame() {
             let cursor_style = "initial"
             let time = get_current_session_time()
@@ -753,12 +754,14 @@ You should have received a copy of the GNU General Public License along with thi
                 if (last_canvasY != null && last_canvasY < progress_bar_height) {
                     if (document.getElementById('progress_bar_seeking_enabled').checked) {
                         cursor_style = "col-resize"
-                        cc.fillStyle="rgba(255,255,255,0.4)"
-                        cc.fillRect(0,0,last_canvasX, progress_bar_height)
-                        /*cc.fillStyle="red"
-                        cc.beginPath()
-                        cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
-                        cc.fill()*/
+                        if (!touch_device) {
+                            cc.fillStyle="rgba(255,255,255,0.4)"
+                            cc.fillRect(0,0,last_canvasX, progress_bar_height)
+                            /*cc.fillStyle="red"
+                            cc.beginPath()
+                            cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
+                            cc.fill()*/
+                        }
                     } else {
                         cursor_style = "not-allowed"
                     }
@@ -1107,6 +1110,12 @@ You should have received a copy of the GNU General Public License along with thi
                 canvas.addEventListener('mouseout', (event) => {
                     last_canvasX = null
                     last_canvasY = null
+                })
+                canvas.addEventListener('touchstart', (event) => {
+                    touch_device = true;
+                })
+                canvas.addEventListener('touchend', (event) => {
+                    touch_device = true;
                 })
             }
         }
