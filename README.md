@@ -2,7 +2,9 @@
 
 ## Screenshot
 
-![Screenshot](images/screenshot.png)
+| Setup screen                            | Running screen             |
+|-----------------------------------------|----------------------------|
+| ![](images/setup_screen_screenshot.png) | ![](images/screenshot.png) |
 
 ## Description
 
