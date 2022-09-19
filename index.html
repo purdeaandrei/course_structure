@@ -1099,11 +1099,6 @@ You should have received a copy of the GNU General Public License along with thi
                     last_canvasX = event.clientX - rect.left
                     last_canvasY = event.clientY - rect.top
                 })
-                canvas.addEventListener('mouseover', (event) => {
-                    const rect = canvas.getBoundingClientRect()
-                    last_canvasX = event.clientX - rect.left
-                    last_canvasY = event.clientY - rect.top
-                })
                 canvas.addEventListener('mouseout', (event) => {
                     last_canvasX = null
                     last_canvasY = null
