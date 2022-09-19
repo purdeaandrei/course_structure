@@ -53,8 +53,9 @@ extract it first, before opening index.html.
 
 ## Keyboard shortcuts
 
-The keyboard shortcuts (which are only enabled if "Enable keyboard shortcuts" is checked
-on the setup screen) are similar to mplayer's shortcuts:
+The keyboard shortcuts are only enabled if "Enable keyboard shortcuts" is checked
+on the setup screen. The first couple are similar to mplayer's shortcuts, but there
+are also a couple specific to this application:
 
 | Key      | Action                                                                                                                                    |
 |----------|-------------------------------------------------------------------------------------------------------------------------------------------|
@@ -66,6 +67,8 @@ on the setup screen) are similar to mplayer's shortcuts:
 | Down     | Go Back 60 seconds                                                                                                                        |
 | PageUp   | Jump to the next section                                                                                                                  |
 | PageDown | Jump back to the beginning of the current section, or if close to the beginning of the current section, then jump to the previous section |
+| +        | Adjust the structure such as more time (+60s) is added to the current silent section, but some time is taken away from following silence  |
+| -        | Adjust the structure such the current silent section is shortened by 60 seconds, and the time is added to some following silence          |
 
 ## Credits
 

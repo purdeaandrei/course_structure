@@ -566,6 +566,28 @@ You should have received a copy of the GNU General Public License along with thi
                 seek_to_time(structure_expanded[i-1][1], ev)
             }
         }
+        const adjust_available_time = (adjustment, ev) => {
+            let [i, ofs] = get_current_index_and_offset()
+            while ((i < structure_expanded.length) && (structure_expanded[i][0] == "music")) {
+                i+=1
+            }
+            if (i < structure_expanded.length) {
+                adjustment = max(structure_expanded[i][1] + ofs - structure_expanded[i][2], adjustment)
+                let j = i
+                while ((j < structure_expanded.length) && (structure_expanded[j][0] != "music")) j++;
+                if (j >= structure_expanded.length) return
+                while ((j < structure_expanded.length) && ((structure_expanded[j][0] == "music") || ((adjustment > 0) && (structure_expanded[j][2] - structure_expanded[j][1] < 0.1)))) j++;
+                if (j >= structure_expanded.length) return
+                adjustment = min(structure_expanded[j][2] - structure_expanded[j][1], adjustment)
+                structure_expanded[i][2] += adjustment
+                while (i+1 < j) {
+                    i += 1
+                    structure_expanded[i][1] += adjustment
+                    structure_expanded[i][2] += adjustment
+                }
+                structure_expanded[j][1] += adjustment
+            }
+        }
         function toggle_fullscreen() {
             if (document.fullscreenElement == canvas) {
                 document.exitFullscreen()
@@ -587,11 +609,17 @@ You should have received a copy of the GNU General Public License along with thi
                     if (ev.clientX < boxs + 4) {
                         click_pause(ev)
                         captured = true
-                    } else if ((ev.clientX < 4 + boxs + 8 + boxs)) {
+                    } else if (ev.clientX < 4 + boxs + 8 + boxs) {
                         click_skip_prev(ev)
                         captured = true
-                    } else if ((ev.clientX < 4 + boxs + 8 + boxs + 8 + boxs)) {
+                    } else if (ev.clientX < 4 + boxs + (8 + boxs) * 2) {
                         click_skip_next(ev)
+                        captured = true
+                    } else if (ev.clientX < 4 + boxs + (8 + boxs) * 3) {
+                        adjust_available_time(60, ev)
+                        captured = true
+                    } else if (ev.clientX < 4 + boxs + (8 + boxs) * 4) {
+                        adjust_available_time(-60, ev)
                         captured = true
                     }
                 }
@@ -896,14 +924,23 @@ You should have received a copy of the GNU General Public License along with thi
                 cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs - boxs / 10)
                 cc.fill()
 
+                cc.strokeRect(4 + (boxs + 8) * 3, height_left-boxs-4, boxs, boxs)
+                cc.strokeRect(4 + (boxs + 8) * 4, height_left-boxs-4, boxs, boxs)
+                cc.font = "" + (boxs/3) + "px Arial"
+                cc.fillText("Time", 4 + (boxs + 8) * 3 + boxs/2, height_left-boxs-4 + boxs*4/5)
+                cc.fillText("Time", 4 + (boxs + 8) * 4 + boxs/2, height_left-boxs-4 + boxs*4/5)
+                cc.font = "" + (boxs/1) + "px Arial"
+                cc.fillText("+",    4 + (boxs + 8) * 3 + boxs/2, height_left-boxs-4 + boxs*2.25/5)
+                cc.fillText("-",    4 + (boxs + 8) * 4 + boxs/2, height_left-boxs-4 + boxs*1.8/5)
+
                 if (found) {
                     cc.textAlign = "left"
                     cc.font = "" + (boxs/2) + "px Arial"
-                    cc.fillText("" + ii + ": " + sect[0], 4 + boxs + 8 + boxs + 8 + boxs + 10, height_left-boxs-4 + boxs*3/4)
+                    cc.fillText("" + ii + ": " + sect[0], 4 + (boxs + 8) * 5 + 2, height_left-boxs-4 + boxs*3/4)
                 }
 
                 if (last_canvasY > canvas.height-boxs-4) {
-                    if ((last_canvasX < 4 + boxs + 8 + boxs + 8 + boxs)) {
+                    if ((last_canvasX < 4 + boxs + (8 + boxs) * 4)) {
                         cursor_style = "pointer"
                     }
                 }
@@ -1019,6 +1056,7 @@ You should have received a copy of the GNU General Public License along with thi
                     if (event.isComposing || event.keyCode === 229) {
                         return;
                     }
+                    console.log(event.keyCode)
                     switch (event.keyCode) {
                         case 70: /* F pressed */
                             toggle_fullscreen()
@@ -1032,17 +1070,25 @@ You should have received a copy of the GNU General Public License along with thi
                         case 33: /* page-up */
                             click_skip_next(event)
                             break
-                        case 39:
+                        case 39: /* right arrow */
                             click_skip_seconds(10, event)
                             break
-                        case 37:
+                        case 37: /* left arrow */
                             click_reverse_seconds(10, event)
                             break
-                        case 38:
+                        case 38: /* up arrow */
                             click_skip_seconds(60, event)
                             break
-                        case 40:
+                        case 40: /* down arrow */
                             click_reverse_seconds(60, event)
+                            break
+                        case 107: /* numpad + */
+                        case 187: /* alpha key with plus symbol (next to backspace) */
+                            adjust_available_time(60, event)
+                            break
+                        case 109: /* numpad - */
+                        case 189: /* alpha key with minus symbol (second one next to backspace) */
+                            adjust_available_time(-60, event)
                             break
                     }
                 })
