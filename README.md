@@ -32,7 +32,11 @@ When ready, click START.
 It is recommended to put the browser into full-screen mode at this stage.
 
 You may use the on-screen navigation buttons (if they have been enabled), to pause
-and/or to skip or go back to sections.
+and/or to skip or go back to sections. There is also a feature where you may request
+more time, (or less time) from the currently running silent section. This does not
+increase (or decrease) the total lesson length. Extra silence length is achieved by
+stealing time from a following silence. When lowering the available time, extra time
+is added to the following section of silence.
 
 In order to prevent your device from going to sleep, a wake lock has been implemented,
 and you can see it's status underneath the start button. If it says "OK", then
