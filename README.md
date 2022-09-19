@@ -1,5 +1,11 @@
 # Course Structure
 
+## Screenshot
+
+![Screenshot](images/screenshot.png)
+
+## Description
+
 This is a small tool, incorporating a specialized stopwatch, and a music player,
 designed to help with hosting West Coast Swing lessons, with a pre-defined strict
 structure. It is especially useful to help instructors keep control over the passage
