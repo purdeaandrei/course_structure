@@ -599,6 +599,7 @@ You should have received a copy of the GNU General Public License along with thi
             unpause_this_au = null
             previous_sect = null
             first_end_frame = true
+            previous_session_time = -1
             if (!paused && time < 0.001) {
                 if (document.getElementById('class_begins').checked) {
                     play_notification_sound('class_begins_sound')
@@ -697,10 +698,9 @@ You should have received a copy of the GNU General Public License along with thi
         function getTime () {
             return (new Date()).getTime()/1000
         }
-        function play_sound_if_needed(sect, left, sectindex) {
+        function play_sound_if_needed(sect, left, previous_left, sectindex) {
             const did_we_pass_marker = (time) => {
-                return (left <= time) &&
-                       (time - left < 1)
+                return (left <= time) && (previous_left > time) && (time - left < 1)
             }
             let minlen = parseInt(document.getElementById('min_length_for_1min_alert').value) * 60;
             if (isNaN(minlen)) minlen = 0
@@ -758,6 +758,7 @@ You should have received a copy of the GNU General Public License along with thi
         let last_canvasX = null
         let last_canvasY = null
         let touch_device = false
+        let previous_session_time = -1
         function drawCurrentFrame() {
             let cursor_style = "initial"
             let time = get_current_session_time()
@@ -828,13 +829,14 @@ You should have received a copy of the GNU General Public License along with thi
                     let len = sect[2] - sect[1]
                     let pos = time - sect[1]
                     let left = len - pos
+                    let previous_left = len - (previous_session_time - sect[1])
                     let left_min_float = left / 60
                     let left_min = parseInt(left_min_float)
                     let left_sec = left - left_min * 60
 
                     if (!paused)
                     {
-                        play_sound_if_needed(sect, left, ii)
+                        play_sound_if_needed(sect, left, previous_left, ii)
                     }
 
                     let mprogress = (60 - left_min_float) / 60
@@ -999,6 +1001,7 @@ You should have received a copy of the GNU General Public License along with thi
 
             }
             canvas.style.cursor = cursor_style
+            previous_session_time = time
         }
         const anim = () => {
             drawCurrentFrame()
