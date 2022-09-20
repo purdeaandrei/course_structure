@@ -284,12 +284,17 @@ You should have received a copy of the GNU General Public License along with thi
             return index
         }
 
+        function log_ready_state(name, a) {
+            console.log(name + " - readyState: " + a.readyState + " networkState: " + a.networkState)
+        }
+
         function play_song_at_index(index, additional_offset = 0) {
             stop_song()
             let starting_time = parseFloat(document.querySelectorAll('#music_list .play_offset_seconds')[index].value) + max(additional_offset, 0)
             if (starting_time < 0.1) starting_time = 0
             if (all_files[index][1].duration > starting_time) {
                 all_files[index][1].currentTime = starting_time
+                log_ready_state(all_files[index][0], all_files[index][1])
                 all_files[index][1].play()
             } else {
                 console.log("Error: song " + all_files[index][0] + " was shorter than the desired starting time")
@@ -308,6 +313,7 @@ You should have received a copy of the GNU General Public License along with thi
             const index = get_file_index_from_tr(tr)
             stop_song()
             all_files[index][1].currentTime = parseFloat(tr.querySelector('.play_offset_seconds').value)
+            log_ready_state(all_files[index][0], all_files[index][1])
             all_files[index][1].play()
         }
         function stop_song() {
@@ -528,7 +534,9 @@ You should have received a copy of the GNU General Public License along with thi
             }
         }
         function play_notification_sound(audio_id) {
-            document.getElementById(audio_id).play()
+            const audio = document.getElementById(audio_id)
+            log_ready_state(audio_id, audio)
+            audio.play()
         }
         display_structure(default_structure)
         const canvas = document.querySelector("#showtime")
@@ -544,6 +552,7 @@ You should have received a copy of the GNU General Public License along with thi
                 }
                 start_time += getTime() - pause_time
                 if (unpause_this_au) {
+                    log_ready_state("song being unpaused", unpause_this_au)
                     unpause_this_au.play()
                 }
             } else {
