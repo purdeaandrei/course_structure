@@ -586,7 +586,8 @@ You should have received a copy of the GNU General Public License along with thi
             seek_to_time(new_session_time, ev)
         }
         const click_reverse_seconds = (seconds, ev) => {
-            const new_session_time = max(get_current_session_time() - seconds, 0)
+            const reference_session_time = min(get_current_session_time(), structure_expanded[structure_expanded.length - 1][2])
+            const new_session_time = max(reference_session_time - seconds, 0)
             seek_to_time(new_session_time, ev)
         }
         const seek_to_time = (time, ev) => {
