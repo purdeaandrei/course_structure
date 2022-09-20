@@ -67,6 +67,12 @@ You should have received a copy of the GNU General Public License along with thi
         #startbutton {
             font-size: 2em;
         }
+        #notification_sounds_status {
+            color: red;
+        }
+        #songs_status {
+            color: red;
+        }
     </style>
 
   </head>
@@ -127,6 +133,8 @@ You should have received a copy of the GNU General Public License along with thi
 
         <button id="startbutton" class="mybutton" onclick="start_showtime()">START</button>
         <br />
+        <span id="notification_sounds_status"><br />Loading notification sounds...</span>
+        <span id="songs_status" class="hidden"><br />Loading selected songs...</span>
         <br />
         <span id="wake_lock_message">Wake lock status: <span id="wake_lock_status">unknown</span></span>
         <br />
@@ -215,6 +223,25 @@ You should have received a copy of the GNU General Public License along with thi
             "music",
             "summary"
         ]
+        let can_play_through_promises = []
+        for (const au of document.querySelectorAll('audio')) {
+            const aupromise = new Promise(function(resolve, reject) {
+                au.addEventListener('canplaythrough', (event) => {
+                    resolve([au, event])
+                })
+                au.addEventListener('error', (event) => {
+                    console.log("Error on notification sound " + au.id, event)
+                    reject([au, event])
+                })
+            })
+            au.addEventListener('abort', (event) => {
+                console.log("Abort on notification sound " + au.id, event)
+            })
+            can_play_through_promises.push(aupromise)
+        }
+        Promise.all(can_play_through_promises).then(() => {
+            document.getElementById('notification_sounds_status').style.display='none'
+        })
         let body = document.querySelector('body')
         let drag_counter = 0;
         body.addEventListener('drop', (ev) => {
@@ -355,10 +382,25 @@ You should have received a copy of the GNU General Public License along with thi
             music_list.appendChild(temp_element.content);
         }
 
+        let handleFiles_called_times = 0
         function handleFiles(files) {
+            handleFiles_called_times += 1
+            const current_call_number = handleFiles_called_times
             for (const file of files) {
                 const url = URL.createObjectURL(file)
                 const a = new Audio(url)
+                const apromise = new Promise(function(resolve, reject) {
+                    a.addEventListener('canplaythrough', (event) => {
+                        resolve([a, event])
+                    })
+                    a.addEventListener('error', (event) => {
+                        console.log("Error on notification sound " + a.id, event)
+                        reject([a, event])
+                    })
+                })
+                a.addEventListener('abort', (event) => {
+                    console.log("Abort on notification sound " + a.id, event)
+                })
                 a.addEventListener('durationchange', ev => {
                     for (let i=0;i<all_files.length;i++) {
                         if (all_files[i][1] == a) {
@@ -367,9 +409,15 @@ You should have received a copy of the GNU General Public License along with thi
                     }
                 })
                 display_file(file.name, a.duration)
-                all_files.push([file.name, a, 0])
+                all_files.push([file.name, a, 0, apromise])
             }
             document.getElementById("filechooser").value=""
+            document.getElementById("songs_status").classList.remove("hidden")
+            Promise.all(all_files.map(item => item[3])).then(() => {
+                if (current_call_number == handleFiles_called_times) {
+                    document.getElementById("songs_status").classList.add("hidden")
+                }
+            })
         }
 
         function remove_item(ev) {
