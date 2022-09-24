@@ -607,7 +607,7 @@ You should have received a copy of the GNU General Public License along with thi
             stop_song()
             unpause_this_au = null
             previous_sect = null
-            first_end_frame = true
+            ending_sound_processed = false
             previous_session_time = -1
             if (!paused && time < 0.001) {
                 if (document.getElementById('class_begins').checked) {
@@ -701,7 +701,7 @@ You should have received a copy of the GNU General Public License along with thi
         }
         const cc = canvas.getContext("2d")
         let start_time = 0
-        let first_end_frame = true
+        let ending_sound_processed = false
         let previous_sect = null
         let structure_expanded = null
         function getTime () {
@@ -1014,12 +1014,12 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             if (!found) {
-                if (first_end_frame) {
+                if (!ending_sound_processed) {
                     if (document.getElementById('sound_at_end').checked) {
                         let what = document.getElementById('what_to_play_at_end').value
                         play_notification_sound(what)
                     }
-                    first_end_frame = false
+                    ending_sound_processed = true
                 }
             }
             previous_session_time = time
@@ -1119,7 +1119,7 @@ You should have received a copy of the GNU General Public License along with thi
             document.body.style.background="black"
             start_time = getTime()
             paused = false
-            first_end_frame = true
+            ending_sound_processed = false
             if (document.getElementById('class_begins').checked) {
                 play_notification_sound('class_begins_sound')
             }
