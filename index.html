@@ -767,7 +767,6 @@ You should have received a copy of the GNU General Public License along with thi
         let last_canvasX = null
         let last_canvasY = null
         let touch_device = false
-        let previous_session_time = -1
         function drawCurrentFrame() {
             let cursor_style = "initial"
             let time = get_current_session_time()
@@ -838,17 +837,7 @@ You should have received a copy of the GNU General Public License along with thi
                     let len = sect[2] - sect[1]
                     let pos = time - sect[1]
                     let left = len - pos
-                    let previous_left = len - (previous_session_time - sect[1])
-                    let left_min_float = left / 60
-                    let left_min = parseInt(left_min_float)
-                    let left_sec = left - left_min * 60
-
-                    if (!paused)
-                    {
-                        play_sound_if_needed(sect, left, previous_left, ii)
-                    }
-
-                    let mprogress = (60 - left_min_float) / 60
+                    let mprogress = (60 - left / 60) / 60
                     
                     // These are the 16:9 aspect ratio variants
                     let x = canvas.width - 20
@@ -1010,13 +999,34 @@ You should have received a copy of the GNU General Public License along with thi
 
             }
             canvas.style.cursor = cursor_style
+        }
+        let previous_session_time = -1
+        function performSoundActions() {
+            let time = get_current_session_time()
+            let ii = 0
+            for (ii = 0; ii<structure_expanded.length; ii++) {
+                let sect = structure_expanded[ii]
+                if ((time >= sect[1]) && (time < sect[2])) {
+                    let len = sect[2] - sect[1]
+                    let pos = time - sect[1]
+                    let left = len - pos
+                    let previous_left = len - (previous_session_time - sect[1])
+                    if (!paused)
+                    {
+                        play_sound_if_needed(sect, left, previous_left, ii)
+                    }
+                }
+            }
             previous_session_time = time
         }
         const anim = () => {
             drawCurrentFrame()
             requestAnimationFrame(anim)
         }
-
+        const actions = () => {
+            performSoundActions()
+            setTimeout(actions, 1000 / 20)
+        }
         const resizeCanvas = () => {
             let w = window.innerWidth;
             let h = window.innerHeight;
@@ -1109,8 +1119,9 @@ You should have received a copy of the GNU General Public License along with thi
                 play_notification_sound('class_begins_sound')
             }
             document.getElementsByTagName('body')[0].style.margin="0 0 0 0"
-            resizeCanvas();
+            resizeCanvas()
             anim()
+            actions()
             window.onresize = () => {
                 resizeCanvas();
                 drawCurrentFrame();
