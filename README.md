@@ -79,8 +79,8 @@ are also a couple specific to this application:
 | Down     | Go Back 60 seconds                                                                                                                        |
 | PageUp   | Jump to the next section                                                                                                                  |
 | PageDown | Jump back to the beginning of the current section, or if close to the beginning of the current section, then jump to the previous section |
-| +        | Adjust the structure such as more time (+60s) is added to the current silent section, but some time is taken away from following silence  |
-| -        | Adjust the structure such the current silent section is shortened by 60 seconds, and the time is added to some following silence          |
+| + / =    | Adjust the structure such as more time (+60s) is added to the current silent section, but some time is taken away from following silence  |
+| - / _    | Adjust the structure such the current silent section is shortened by 60 seconds, and the time is added to some following silence          |
 
 ## Credits
 
