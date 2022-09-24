@@ -403,7 +403,8 @@ You should have received a copy of the GNU General Public License along with thi
         function stop_playing_silence() {
             const silence = document.getElementById('silence_sound')
             if (!silence.paused && !silence.ended && (silence.currentTime > 0)) {
-                silence.stop()
+                silence.pause()
+                silence.currentTime = 0
             }
         }
 
