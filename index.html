@@ -67,7 +67,7 @@ You should have received a copy of the GNU General Public License along with thi
         #startbutton {
             font-size: 2em;
         }
-        #notification_sounds_status {
+        #non_song_sounds_status {
             color: red;
         }
         #songs_status {
@@ -133,7 +133,7 @@ You should have received a copy of the GNU General Public License along with thi
 
         <button id="startbutton" class="mybutton" onclick="start_showtime()">START</button>
         <br />
-        <span id="notification_sounds_status"><br />Loading notification sounds...</span>
+        <span id="non_song_sounds_status"><br />Loading non-song-sounds...</span>
         <span id="songs_status" class="hidden"><br />Loading selected songs...</span>
         <br />
         <span id="wake_lock_message">Wake lock status: <span id="wake_lock_status">unknown</span></span>
@@ -192,6 +192,9 @@ You should have received a copy of the GNU General Public License along with thi
         
     </div>
     <canvas id="showtime"></canvas>
+    <div style="display:none" id="non_notification_sounds">
+        <audio src="sounds/silence.mp3" id="silence_sound" preload="auto" loop></audio>
+    </div>
     <div style="display:none" id="notification_sounds">
         <audio src="sounds/class_begins.mp3" id="class_begins_sound" preload="auto"></audio>
         <audio src="sounds/drum.mp3" id="drum_sound" preload="auto"></audio>
@@ -230,17 +233,17 @@ You should have received a copy of the GNU General Public License along with thi
                     resolve([au, event])
                 })
                 au.addEventListener('error', (event) => {
-                    console.log("Error on notification sound " + au.id, event)
+                    console.log("Error on sound " + au.id, event)
                     reject([au, event])
                 })
             })
             au.addEventListener('abort', (event) => {
-                console.log("Abort on notification sound " + au.id, event)
+                console.log("Abort on sound " + au.id, event)
             })
             can_play_through_promises.push(aupromise)
         }
         Promise.all(can_play_through_promises).then(() => {
-            document.getElementById('notification_sounds_status').style.display='none'
+            document.getElementById('non_song_sounds_status').style.display='none'
         })
         let body = document.querySelector('body')
         let drag_counter = 0;
@@ -388,6 +391,22 @@ You should have received a copy of the GNU General Public License along with thi
             music_list.appendChild(temp_element.content);
         }
 
+        function start_playing_silence() {
+            // Play back silence, as a form of primitive wake lock, to help when the page is not in the foreground
+            const silence = document.getElementById('silence_sound')
+            if (silence.paused || silence.ended || (silence.currentTime <= 0)) {
+                silence.play()
+                silence.volume = 0.01
+            }
+        }
+
+        function stop_playing_silence() {
+            const silence = document.getElementById('silence_sound')
+            if (!silence.paused && !silence.ended && (silence.currentTime > 0)) {
+                silence.stop()
+            }
+        }
+
         let handleFiles_called_times = 0
         function handleFiles(files) {
             handleFiles_called_times += 1
@@ -525,7 +544,7 @@ You should have received a copy of the GNU General Public License along with thi
             refresh_timer_and_checks()
         }
         function stop_notification_sounds() {
-            for (const c of document.getElementsByTagName('audio')) {
+            for (const c of document.querySelectorAll('#notification_sounds audio')) {
                 // Note: this will not catch songs, because those exist outside of the document
                 if (!c.paused && !c.ended && c.currentTime > 0) {
                     c.pause()
@@ -545,6 +564,7 @@ You should have received a copy of the GNU General Public License along with thi
         let pause_time = null
         const click_pause = (ev) => {
             if (paused) {
+                start_playing_silence()
                 if (pause_time - start_time < 0.1) {
                     if (document.getElementById('class_begins').checked) {
                         play_notification_sound('class_begins_sound')
@@ -556,6 +576,7 @@ You should have received a copy of the GNU General Public License along with thi
                     unpause_this_au.play()
                 }
             } else {
+                stop_playing_silence()
                 unpause_this_au = null
                 for (let i=0;i<all_files.length;i++) {
                     const au = all_files[i][1];
@@ -608,6 +629,9 @@ You should have received a copy of the GNU General Public License along with thi
             unpause_this_au = null
             previous_sect = null
             ending_sound_processed = false
+            if (!paused) {
+                start_playing_silence()
+            }
             previous_session_time = -1
             if (!paused && time < 0.001) {
                 if (document.getElementById('class_begins').checked) {
@@ -1015,6 +1039,7 @@ You should have received a copy of the GNU General Public License along with thi
             }
             if (!found) {
                 if (!ending_sound_processed) {
+                    stop_playing_silence()
                     if (document.getElementById('sound_at_end').checked) {
                         let what = document.getElementById('what_to_play_at_end').value
                         play_notification_sound(what)
@@ -1120,6 +1145,7 @@ You should have received a copy of the GNU General Public License along with thi
             start_time = getTime()
             paused = false
             ending_sound_processed = false
+            start_playing_silence()
             if (document.getElementById('class_begins').checked) {
                 play_notification_sound('class_begins_sound')
             }
