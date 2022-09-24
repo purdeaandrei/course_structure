@@ -923,13 +923,6 @@ You should have received a copy of the GNU General Public License along with thi
                 cc.textAlign = "center"
                 cc.textBaseline = "middle"
                 cc.fillText("THE END", canvas.width/2, height_left/2)
-                if (first_end_frame) {
-                    if (document.getElementById('sound_at_end').checked) {
-                        let what = document.getElementById('what_to_play_at_end').value
-                        play_notification_sound(what)
-                    }
-                    first_end_frame = false
-                }
             }
             if (document.getElementById('navigation_buttons_enable').checked) {
                 const boxs = max(min(canvas.width, height_left) / 9, 30)
@@ -1004,6 +997,7 @@ You should have received a copy of the GNU General Public License along with thi
         function performSoundActions() {
             let time = get_current_session_time()
             let ii = 0
+            let found = false
             for (ii = 0; ii<structure_expanded.length; ii++) {
                 let sect = structure_expanded[ii]
                 if ((time >= sect[1]) && (time < sect[2])) {
@@ -1015,6 +1009,17 @@ You should have received a copy of the GNU General Public License along with thi
                     {
                         play_sound_if_needed(sect, left, previous_left, ii)
                     }
+                    found = true
+                    break
+                }
+            }
+            if (!found) {
+                if (first_end_frame) {
+                    if (document.getElementById('sound_at_end').checked) {
+                        let what = document.getElementById('what_to_play_at_end').value
+                        play_notification_sound(what)
+                    }
+                    first_end_frame = false
                 }
             }
             previous_session_time = time
