@@ -394,17 +394,29 @@ You should have received a copy of the GNU General Public License along with thi
         function start_playing_silence() {
             // Play back silence, as a form of primitive wake lock, to help when the page is not in the foreground
             const silence = document.getElementById('silence_sound')
+            silence.loop = true
             if (silence.paused || silence.ended || (silence.currentTime <= 0)) {
                 silence.play()
                 silence.volume = 0.01
             }
         }
 
-        function stop_playing_silence() {
+        function pause_playing_silence() {
             const silence = document.getElementById('silence_sound')
             if (!silence.paused && !silence.ended && (silence.currentTime > 0)) {
                 silence.pause()
                 silence.currentTime = 0
+            }
+        }
+
+        function stop_playing_silence() {
+            const silence = document.getElementById('silence_sound')
+            silence.loop = false
+            if (!silence.ended) {
+                if (silence.paused) {
+                    silence.play()
+                }
+                silence.currentTime = silence.duration
             }
         }
 
@@ -577,7 +589,7 @@ You should have received a copy of the GNU General Public License along with thi
                     unpause_this_au.play()
                 }
             } else {
-                stop_playing_silence()
+                pause_playing_silence()
                 unpause_this_au = null
                 for (let i=0;i<all_files.length;i++) {
                     const au = all_files[i][1];
@@ -1019,10 +1031,11 @@ You should have received a copy of the GNU General Public License along with thi
             canvas.style.cursor = cursor_style
         }
         let previous_session_time = -1
-        function performSoundActions() {
+        function performActions() {
             let time = get_current_session_time()
             let ii = 0
             let found = false
+            let message = "The End"
             for (ii = 0; ii<structure_expanded.length; ii++) {
                 let sect = structure_expanded[ii]
                 if ((time >= sect[1]) && (time < sect[2])) {
@@ -1035,6 +1048,7 @@ You should have received a copy of the GNU General Public License along with thi
                         play_sound_if_needed(sect, left, previous_left, ii)
                     }
                     found = true
+                    message = "" + ii + ": " + sect[0]
                     break
                 }
             }
@@ -1049,13 +1063,37 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             previous_session_time = time
+            if ('mediaSession' in navigator) {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: message,
+                    artist: 'Course Structure',
+                })
+                if (paused) {
+                    navigator.mediaSession.playbackState = "paused"
+                } else {
+                    navigator.mediaSession.playbackState = "playing"
+                }
+                navigator.mediaSession.setActionHandler('play', click_pause)
+                navigator.mediaSession.setActionHandler('pause', click_pause)
+                navigator.mediaSession.setActionHandler('nexttrack', click_skip_next)
+                navigator.mediaSession.setActionHandler('previoustrack', click_skip_prev)
+                navigator.mediaSession.setActionHandler('seekforward', function() {
+                    click_skip_seconds(10)
+                })
+                navigator.mediaSession.setActionHandler('seekbackward', function() {
+                    click_reverse_seconds(10)
+                })
+                navigator.mediaSession.setActionHandler('stop', function() {
+                    seek_to_time(structure_expanded[structure_expanded.length - 1][2], ev)
+                })
+            }
         }
         const anim = () => {
             drawCurrentFrame()
             requestAnimationFrame(anim)
         }
         const actions = () => {
-            performSoundActions()
+            performActions()
             setTimeout(actions, 1000 / 20)
         }
         const resizeCanvas = () => {
