@@ -700,6 +700,7 @@ You should have received a copy of the GNU General Public License along with thi
             seeking.checked = show.checked
             seeking.disabled = !show.checked
         }
+        const progress_bar_height_scaler = 1 / 12
         canvas.onclick = (ev) => {
             const boxs = max(min(canvas.width, canvas.height) / 9, 30)
             let captured = false
@@ -724,7 +725,7 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             if (document.getElementById('show_progress_bar').checked) {
-                const progress_bar_height = canvas.height / 20
+                const progress_bar_height = canvas.height * progress_bar_height_scaler
                 if (ev.clientY < progress_bar_height) {
                     captured = true
                     if (document.getElementById('progress_bar_seeking_enabled').checked) {
@@ -817,7 +818,7 @@ You should have received a copy of the GNU General Public License along with thi
             let height_left = canvas.height
             if (document.getElementById('show_progress_bar').checked) {
                 cc.fillStyle="red"
-                const progress_bar_height = canvas.height / 12
+                const progress_bar_height = canvas.height * progress_bar_height_scaler
                 const total_length = structure_expanded[structure_expanded.length - 1][2]
                 const progress = time / total_length
                 const tick_w = canvas.width / 240
