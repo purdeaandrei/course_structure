@@ -703,7 +703,7 @@ You should have received a copy of the GNU General Public License along with thi
         const progress_bar_height_scaler = 1 / 12
         canvas.onclick = (ev) => {
             const progress_bar_height = canvas.height * progress_bar_height_scaler
-            const boxs = max(min(canvas.width, canvas.height) / 9, 30)
+            const boxs = max(min(canvas.width, (canvas.height - progress_bar_height)) / 9, 30)
             let captured = false
             if (document.getElementById('navigation_buttons_enable').checked) {
                 if (ev.clientY > canvas.height-boxs-4 - progress_bar_height && ev.clientY < canvas.height - progress_bar_height) {
