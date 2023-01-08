@@ -816,55 +816,8 @@ You should have received a copy of the GNU General Public License along with thi
             cc.fillRect(0, 0, canvas.width, canvas.height)
             
             let height_left = canvas.height
+            const progress_bar_height = canvas.height * progress_bar_height_scaler // only used if enabled
             if (document.getElementById('show_progress_bar').checked) {
-                cc.fillStyle="red"
-                const progress_bar_height = canvas.height * progress_bar_height_scaler
-                const total_length = structure_expanded[structure_expanded.length - 1][2]
-                const progress = time / total_length
-                const tick_w = canvas.width / 240
-                const progress_width = (canvas.width) * progress
-                cc.fillRect(0, progress_bar_height / 2, progress_width , progress_bar_height / 2)
-                cc.fillStyle="grey"
-                cc.fillRect(progress_width, progress_bar_height / 2, canvas.width - progress_width , progress_bar_height / 2)
-                for (const f of structure_expanded) {
-                    const fill_color = get_progress_bar_color_of(f[0])
-                    const right_edge = f[2] * canvas.width / total_length
-                    const left_edge = f[1] * canvas.width / total_length
-                    cc.fillStyle=fill_color
-                    cc.fillRect(left_edge, 0, right_edge - left_edge, progress_bar_height / 2)
-                }
-                cc.fillStyle="white"
-                for (let i=0; i<structure_expanded.length - 1; i++) {
-                    const f = structure_expanded[i]
-                    const fill_color = get_progress_bar_color_of(f[0])
-                    const fill_color_next = get_progress_bar_color_of(structure_expanded[i+1][0])
-                    if (fill_color_next == fill_color) {
-                        const tick_x = f[2] * canvas.width / total_length
-                        // Print a tick, if color is the same
-                        cc.beginPath()
-                        cc.moveTo(tick_x - tick_w, 0)
-                        cc.lineTo(tick_x + tick_w, 0)
-                        cc.lineTo(tick_x + tick_w, progress_bar_height / 4)
-                        cc.lineTo(tick_x, progress_bar_height / 2)
-                        cc.lineTo(tick_x - tick_w, progress_bar_height / 4)
-                        cc.fill()
-                    }
-                }
-                if (last_canvasY != null && last_canvasY < progress_bar_height) {
-                    if (document.getElementById('progress_bar_seeking_enabled').checked) {
-                        cursor_style = "col-resize"
-                        if (!touch_device) {
-                            cc.fillStyle="rgba(255,255,255,0.4)"
-                            cc.fillRect(0,0,last_canvasX, progress_bar_height)
-                            /*cc.fillStyle="red"
-                            cc.beginPath()
-                            cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
-                            cc.fill()*/
-                        }
-                    } else {
-                        cursor_style = "not-allowed"
-                    }
-                }
                 cc.setTransform(1, 0, 0, 1, 0, progress_bar_height)
                 height_left = canvas.height - progress_bar_height
             }
@@ -1031,6 +984,56 @@ You should have received a copy of the GNU General Public License along with thi
                     }
                 }
 
+            }
+            if (document.getElementById('show_progress_bar').checked) {
+                cc.setTransform(1, 0, 0, 1, 0, 0)
+                cc.fillStyle="red"
+                const total_length = structure_expanded[structure_expanded.length - 1][2]
+                const progress = time / total_length
+                const tick_w = canvas.width / 240
+                const progress_width = (canvas.width) * progress
+                cc.fillRect(0, progress_bar_height / 2, progress_width , progress_bar_height / 2)
+                cc.fillStyle="grey"
+                cc.fillRect(progress_width, progress_bar_height / 2, canvas.width - progress_width , progress_bar_height / 2)
+                for (const f of structure_expanded) {
+                    const fill_color = get_progress_bar_color_of(f[0])
+                    const right_edge = f[2] * canvas.width / total_length
+                    const left_edge = f[1] * canvas.width / total_length
+                    cc.fillStyle=fill_color
+                    cc.fillRect(left_edge, 0, right_edge - left_edge, progress_bar_height / 2)
+                }
+                cc.fillStyle="white"
+                for (let i=0; i<structure_expanded.length - 1; i++) {
+                    const f = structure_expanded[i]
+                    const fill_color = get_progress_bar_color_of(f[0])
+                    const fill_color_next = get_progress_bar_color_of(structure_expanded[i+1][0])
+                    if (fill_color_next == fill_color) {
+                        const tick_x = f[2] * canvas.width / total_length
+                        // Print a tick, if color is the same
+                        cc.beginPath()
+                        cc.moveTo(tick_x - tick_w, 0)
+                        cc.lineTo(tick_x + tick_w, 0)
+                        cc.lineTo(tick_x + tick_w, progress_bar_height / 4)
+                        cc.lineTo(tick_x, progress_bar_height / 2)
+                        cc.lineTo(tick_x - tick_w, progress_bar_height / 4)
+                        cc.fill()
+                    }
+                }
+                if (last_canvasY != null && last_canvasY < progress_bar_height) {
+                    if (document.getElementById('progress_bar_seeking_enabled').checked) {
+                        cursor_style = "col-resize"
+                        if (!touch_device) {
+                            cc.fillStyle="rgba(255,255,255,0.4)"
+                            cc.fillRect(0,0,last_canvasX, progress_bar_height)
+                            /*cc.fillStyle="red"
+                            cc.beginPath()
+                            cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
+                            cc.fill()*/
+                        }
+                    } else {
+                        cursor_style = "not-allowed"
+                    }
+                }
             }
             canvas.style.cursor = cursor_style
         }
