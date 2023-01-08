@@ -1010,38 +1010,49 @@ You should have received a copy of the GNU General Public License along with thi
             cc.fillText("THE END", s.canvas_width/2, s.height_except_progress_bar/2)
         }
 
-        const drawButtons = (cc, sizes) => {
+        const drawButtons = (cc, sizes, pointerstate) => {
             const s = sizes
-            const style_normal = "rgba(255,255,255,0.2)"
-            const style_highlighted = "rgba(255,255,255,1)"
+            const style_normal       = "rgba(255,255,255,0.2)"
+            const style_normal_hover = "rgba(255,255,255,0.4)"
+            const style_active       = "rgba(255,255,255,0.8)"
+            const style_active_hover = "rgba(255,255,255,1.0)"
+
+            const local_set_style = (active, button) => {
+                if (areWeHoveringOverGivenButton(pointer_state, button) && !pointer_state.touch_device) {
+                    if (active) {
+                        cc.fillStyle=style_active_hover
+                    } else {
+                        cc.fillStyle=style_normal_hover
+                    }
+                } else {
+                    if (active) {
+                        cc.fillStyle=style_active
+                    } else {
+                        cc.fillStyle=style_normal
+                    }
+                }
+                cc.strokeStyle=cc.fillStyle
+            }
 
             // now draw all the squares
             for (const [index, button] of s.buttons.entries()) {
-                if (index == 0 && paused) {
-                    cc.fillStyle=style_highlighted
-                } else {
-                    cc.fillStyle=style_normal
-                }
+                local_set_style(index == 0 && paused, button)
                 cc.strokeStyle=cc.fillStyle
                 cc.strokeRect(button.xmin, button.ymin, s.boxs, s.boxs)
             }
 
             {
                 // Draw parallel bars of pause button
-                if (paused) {
-                    cc.fillStyle=style_highlighted
-                } else {
-                    cc.fillStyle=style_normal
-                }
+                local_set_style(paused, s.buttons[0])
                 cc.strokeStyle=cc.fillStyle
                 draw_pause_symbol_in_button(cc, s.buttons[0])
             }
 
-            cc.fillStyle=style_normal
-            cc.strokeStyle=cc.fillStyle
             cc.font = "" + s.boxs + "px Arial"
             cc.textAlign = "center"
             cc.textBaseline = "middle"
+
+            local_set_style(false, s.buttons[1])
 
             /* Drawing for the previous-chapter button: */
             draw_fast_forward_rewind(
@@ -1051,6 +1062,9 @@ You should have received a copy of the GNU General Public License along with thi
                 s.buttons[1].ymin,
                 s.buttons[1].ymax)
 
+
+            local_set_style(false, s.buttons[2])
+
             /* Drawing for the next-chapter button: */
             draw_fast_forward_rewind(
                 cc,
@@ -1059,11 +1073,18 @@ You should have received a copy of the GNU General Public License along with thi
                 s.buttons[2].ymin,
                 s.buttons[2].ymax)
 
+            local_set_style(false, s.buttons[3])
+
             cc.font = "" + (s.boxs/3) + "px Arial"
             cc.fillText("Time", s.buttons[3].xmin + s.boxs/2, s.buttons[3].ymin + s.boxs*4/5)
-            cc.fillText("Time", s.buttons[4].xmin + s.boxs/2, s.buttons[4].ymin + s.boxs*4/5)
             cc.font = "" + (s.boxs/1) + "px Arial"
             cc.fillText("+",    s.buttons[3].xmin + s.boxs/2, s.buttons[3].ymin + s.boxs*2.25/5)
+
+            local_set_style(false, s.buttons[4])
+
+            cc.font = "" + (s.boxs/3) + "px Arial"
+            cc.fillText("Time", s.buttons[4].xmin + s.boxs/2, s.buttons[4].ymin + s.boxs*4/5)
+            cc.font = "" + (s.boxs/1) + "px Arial"
             cc.fillText("-",    s.buttons[4].xmin + s.boxs/2, s.buttons[4].ymin + s.boxs*1.8/5)
         }
 
@@ -1143,7 +1164,7 @@ You should have received a copy of the GNU General Public License along with thi
             }
 
             if (document.getElementById('navigation_buttons_enable').checked) {
-                drawButtons(cc, s)
+                drawButtons(cc, s, pointer_state)
 
                 for (const button of s.buttons) {
                     if (areWeHoveringOverGivenButton(pointer_state, button)) {
