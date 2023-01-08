@@ -702,10 +702,11 @@ You should have received a copy of the GNU General Public License along with thi
         }
         const progress_bar_height_scaler = 1 / 12
         canvas.onclick = (ev) => {
+            const progress_bar_height = canvas.height * progress_bar_height_scaler
             const boxs = max(min(canvas.width, canvas.height) / 9, 30)
             let captured = false
             if (document.getElementById('navigation_buttons_enable').checked) {
-                if (ev.clientY > canvas.height-boxs-4) {
+                if (ev.clientY > canvas.height-boxs-4 - progress_bar_height && ev.clientY < canvas.height - progress_bar_height) {
                     if (ev.clientX < boxs + 4) {
                         click_pause(ev)
                         captured = true
@@ -725,8 +726,7 @@ You should have received a copy of the GNU General Public License along with thi
                 }
             }
             if (document.getElementById('show_progress_bar').checked) {
-                const progress_bar_height = canvas.height * progress_bar_height_scaler
-                if (ev.clientY < progress_bar_height) {
+                if (ev.clientY > canvas.height - (progress_bar_height) / 2) {
                     captured = true
                     if (document.getElementById('progress_bar_seeking_enabled').checked) {
                         const total_length = structure_expanded[structure_expanded.length - 1][2]
@@ -814,13 +814,10 @@ You should have received a copy of the GNU General Public License along with thi
             cc.setTransform(1, 0, 0, 1, 0, 0)
             cc.fillStyle="black"
             cc.fillRect(0, 0, canvas.width, canvas.height)
-            
-            let height_left = canvas.height
+
             const progress_bar_height = canvas.height * progress_bar_height_scaler // only used if enabled
-            if (document.getElementById('show_progress_bar').checked) {
-                cc.setTransform(1, 0, 0, 1, 0, progress_bar_height)
-                height_left = canvas.height - progress_bar_height
-            }
+            const height_left =  document.getElementById('show_progress_bar').checked ? (canvas.height - progress_bar_height) : canvas.height
+
             cc.fillStyle="white"
             let found = false
             let ii = 0
@@ -978,7 +975,7 @@ You should have received a copy of the GNU General Public License along with thi
                     cc.fillText("" + ii + ": " + sect[0], 4 + (boxs + 8) * 5 + 2, height_left-boxs-4 + boxs*3/4)
                 }
 
-                if (last_canvasY > canvas.height-boxs-4) {
+                if (last_canvasY > height_left-boxs-4 && last_canvasY < height_left) {
                     if ((last_canvasX < 4 + boxs + (8 + boxs) * 4)) {
                         cursor_style = "pointer"
                     }
@@ -986,7 +983,7 @@ You should have received a copy of the GNU General Public License along with thi
 
             }
             if (document.getElementById('show_progress_bar').checked) {
-                cc.setTransform(1, 0, 0, 1, 0, 0)
+                cc.setTransform(1, 0, 0, 1, 0, canvas.height - progress_bar_height)
                 cc.fillStyle="red"
                 const total_length = structure_expanded[structure_expanded.length - 1][2]
                 const progress = time / total_length
@@ -1019,12 +1016,12 @@ You should have received a copy of the GNU General Public License along with thi
                         cc.fill()
                     }
                 }
-                if (last_canvasY != null && last_canvasY < progress_bar_height) {
+                if (last_canvasY != null && last_canvasY > canvas.height - (progress_bar_height / 2)) {
                     if (document.getElementById('progress_bar_seeking_enabled').checked) {
                         cursor_style = "col-resize"
                         if (!touch_device) {
                             cc.fillStyle="rgba(255,255,255,0.4)"
-                            cc.fillRect(0,0,last_canvasX, progress_bar_height)
+                            cc.fillRect(0,progress_bar_height / 2,last_canvasX, progress_bar_height)
                             /*cc.fillStyle="red"
                             cc.beginPath()
                             cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
