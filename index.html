@@ -95,6 +95,7 @@ You should have received a copy of the GNU General Public License along with thi
                 <td>{{drop-down}}</td>
                 <td><input type="text" class="structure-line-minutes" size="2" value="{{minutes}}" disabled />:
                 <input type="text" class="structure-line-seconds" size="2" value="{{seconds}}" disabled /></td>
+                <td><input type="text" class="structure-line-title" size="16" value="{{title}}" disabled />
             </tr>
         </script>
         Total course length: <span id="total-length"></span>
@@ -118,6 +119,7 @@ You should have received a copy of the GNU General Public License along with thi
         <input type="checkbox" id="show_progress_bar" checked onclick="show_progress_bar_onclick()"><label for="show_progress_bar">Show progress bar</label><br/>
         &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="progress_bar_seeking_enabled" checked><label for="progress_bar_seeking_enabled">Allow seeking by clicking the progress bar</label><br/>
         &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="progress_bar_on_top"><label for="progress_bar_on_top">Progress bar on top</label><br/>
+        <input type="checkbox" id="show_title" checked><label for="show_title">Show title of section</label><br/>
         <h2>Select Music</h2>
 
         <input type="file" id="filechooser" multiple accept="audio/*" onchange="handleFiles(this.files)">
@@ -215,15 +217,15 @@ You should have received a copy of the GNU General Public License along with thi
     <script>
         "use strict"
         let default_structure = [
-            ["silence", 2, 0],
-            ["music", 1, 0],
-            ["silence", 13, 0],
-            ["music", 3, 0],
-            ["silence", 13, 0],
-            ["music", 3, 0],
-            ["silence", 13, 0],
-            ["music", 3, 0],
-            ["summary", 5, 0]
+            ["silence",  2, 0, "intro"],
+            ["music",    1, 0, "intro song"],
+            ["silence", 13, 0, "section 1"],
+            ["music",    3, 0, "song 1"],
+            ["silence", 13, 0, "section 2"],
+            ["music",    3, 0, "song 2"],
+            ["silence", 13, 0, "section 3"],
+            ["music",    3, 0, "song 3"],
+            ["summary",  5, 0, "summary"]
         ]
         let options = [
             "silence",
@@ -482,6 +484,7 @@ You should have received a copy of the GNU General Public License along with thi
                 replaceAll("{{drop-down}}", dropdown).
                 replaceAll("{{minutes}}", "TODO").
                 replaceAll("{{seconds}}", "0").
+                replaceAll("{{title}}", "TODO").
                 replaceAll("disabled", "")
             html = html.trim()
             temp_element.innerHTML = (html).trim()
@@ -538,7 +541,7 @@ You should have received a copy of the GNU General Public License along with thi
         function display_structure(structure) {
             const content = document.getElementById("course-structure-list")
             const template = document.getElementById("line-template")
-            let html = "<tr><th>Edit</th><th>Type</th><th>Minutes:Seconds</th></tr>"
+            let html = "<tr><th>Edit</th><th>Type</th><th>Minutes:Seconds</th><th>Title</th></tr>"
             html += "<tr><td>&nbsp</td></tr>"
             for (const item of structure)
             {
@@ -553,7 +556,8 @@ You should have received a copy of the GNU General Public License along with thi
                 html += template.innerHTML.
                     replaceAll("{{drop-down}}", dropdown).
                     replaceAll("{{minutes}}", item[1]).
-                    replaceAll("{{seconds}}", item[2])
+                    replaceAll("{{seconds}}", item[2]).
+                    replaceAll("{{title}}", item[3])
             }
             html += '<tr><td><button type="button" class="add_button" disabled>+</button></tr>'
             content.innerHTML = html
@@ -838,6 +842,12 @@ You should have received a copy of the GNU General Public License along with thi
             return "black"
         }
 
+        function get_title_color_of(section_type) {
+            const color = get_progress_bar_color_of(section_type)
+            if (color == "black") return "white"
+            return color
+        }
+
         const draw_pause_symbol_in_button = (cc, button) => {
             const boxs_w = (button.xmax - button.xmin)
             const boxs_h = (button.ymax - button.ymin)
@@ -882,6 +892,9 @@ You should have received a copy of the GNU General Public License along with thi
                     cs.tx = (s.canvas_width - s.height_except_progress_bar/2) / 2
                     cs.ty = s.ymin_except_progress_bar + s.height_except_progress_bar / 2
                     cs.fontsize = Math.floor(s.canvas_width * 0.25)
+                    cs.tinfo_fontsize = Math.floor(cs.fontsize / 3)
+                    cs.tinfo_x = cs.tx
+                    cs.tinfo_y = cs.ty + cs.tinfo_fontsize * 1.6
 
                     cs.textAlign = "center"
                     cs.textBaseline = "middle"
@@ -895,14 +908,19 @@ You should have received a copy of the GNU General Public License along with thi
                             cs.fontsize = s.height_except_progress_bar * 0.25
                             cs.ty = s.ymin_except_progress_bar + cs.fontsize / 2 * 1.2
                             cs.tx = s.canvas_width / 2
+                            cs.tinfo_fontsize = Math.floor(cs.fontsize / 3)
+                            cs.tinfo_y = cs.ty + cs.tinfo_fontsize * 1.6
+                            cs.tinfo_x = s.canvas_width / 3.
                             if (ratio < 0.6444981862152358) {
                                 cs.fontsize = s.canvas_width * 0.35
-
+                                cs.tinfo_fontsize = Math.floor(cs.fontsize / 3)
                             }
                         } else if (ratio < 1.3824975417895773) {
                             cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar * 74 / 100
                             cs.ty = s.ymin_except_progress_bar + s.height_except_progress_bar / 3
                             cs.tx = s.canvas_width * 34 / 100
+                            cs.tinfo_y = cs.ty + cs.tinfo_fontsize * 1.6
+                            cs.tinfo_x = cs.tx
                         }
                     } else {
                         cs.mprogress = (60 - cs.left)/ 60
@@ -916,17 +934,30 @@ You should have received a copy of the GNU General Public License along with thi
                             cs.textAlign = "left"
                             cs.textBaseline = "top"
                             cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar - cs.r
+                            cs.tinfo_fontsize = Math.floor(cs.fontsize / 3)
+                            cs.tinfo_x = s.canvas_width / 10
+                            cs.tinfo_y = cs.ty + cs.fontsize
                         } else {
                             cs.r = min((s.canvas_width - 20) / 2, s.height_except_progress_bar * 60 / 100 / 2)
                             cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar - cs.r - 10
                             cs.tx = s.canvas_width / 2
                             cs.ty = s.ymin_except_progress_bar + s.height_except_progress_bar / 4
                             cs.fontsize = Math.floor(s.canvas_width * 0.45)
+                            if (ratio < 0.5792891319207109) {
+                                cs.tinfo_fontsize = Math.floor(cs.fontsize / 3)
+                                cs.tinfo_x = cs.tx
+                                cs.tinfo_y = cs.ty + cs.tinfo_fontsize * 1.6
+                            } else {
+                                cs.tinfo_fontsize = Math.floor(cs.fontsize / 6)
+                                cs.tinfo_x = s.canvas_width * 30 / 100
+                                cs.tinfo_y = cs.ty + cs.tinfo_fontsize * 2.4
+                            }
                         }
                         cs.x = s.canvas_width - cs.r - 10
                     }
                     cs.index = index
-                    cs.title = sect[0]
+                    cs.title = sect[3]
+                    cs.type = sect[0]
                     return cs
                 }
             }
@@ -962,6 +993,11 @@ You should have received a copy of the GNU General Public License along with thi
 
             cc.font = "" + cs.fontsize + "px Arial"
             cc.fillText(minutes_seconds(cs.left), cs.tx, cs.ty)
+            if (document.getElementById('show_title').checked) {
+                cc.fillStyle = get_title_color_of(cs.type)
+                cc.font = "" + cs.tinfo_fontsize + "px Arial"
+                cc.fillText(cs.title, cs.tinfo_x, cs.tinfo_y)
+            }
         }
 
         const drawTheEnd = (cc, sizes) => {
@@ -1029,14 +1065,6 @@ You should have received a copy of the GNU General Public License along with thi
             cc.font = "" + (s.boxs/1) + "px Arial"
             cc.fillText("+",    s.buttons[3].xmin + s.boxs/2, s.buttons[3].ymin + s.boxs*2.25/5)
             cc.fillText("-",    s.buttons[4].xmin + s.boxs/2, s.buttons[4].ymin + s.boxs*1.8/5)
-        }
-
-        const drawSectionNoteNextToButtons = (cc, sizes, clock_sizes) => {
-            const s = sizes
-            const cs = clock_sizes
-            cc.textAlign = "left"
-            cc.font = "" + (s.boxs/2) + "px Arial"
-            cc.fillText("" + cs.index + ": " + cs.title, s.buttons[s.buttons.length-1].xmax + s.buttons_right_padding, s.buttons[s.buttons.length-1].ymin + s.boxs*3/4)
         }
 
         const drawProgressBar = (cc, sizes, structure_expanded, time) => {
@@ -1116,9 +1144,6 @@ You should have received a copy of the GNU General Public License along with thi
 
             if (document.getElementById('navigation_buttons_enable').checked) {
                 drawButtons(cc, s)
-                if (cs) {
-                    drawSectionNoteNextToButtons(cc, s, cs)
-                }
 
                 for (const button of s.buttons) {
                     if (areWeHoveringOverGivenButton(pointer_state, button)) {
@@ -1223,7 +1248,8 @@ You should have received a copy of the GNU General Public License along with thi
                 if (sel) {
                     const min = parseFloat(tr.querySelector(".structure-line-minutes").value)
                     const sec = parseFloat(tr.querySelector(".structure-line-seconds").value)
-                    list.push([sel.value, min, sec])
+                    const title = tr.querySelector(".structure-line-title").value
+                    list.push([sel.value, min, sec, title])
                 }
             }
             return list
@@ -1234,7 +1260,7 @@ You should have received a copy of the GNU General Public License along with thi
             let list = []
             for (const item of structure) {
                 const secs = item[1] * 60 + item[2]
-                list.push([item[0], acc, acc+secs])
+                list.push([item[0], acc, acc+secs, item[3]])
                 acc += secs
             }
             return list
