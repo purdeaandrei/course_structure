@@ -117,6 +117,7 @@ You should have received a copy of the GNU General Public License along with thi
         <input type="checkbox" id="navigation_keyboard_shortcuts_enable" checked><label for="navigation_keyboard_shortcuts_enable">Enable keyboard shortcuts. (See <a href="https://github.com/purdeaandrei/course_structure/blob/master/README.md#keyboard-shortcuts">here</a>)</label><br/>
         <input type="checkbox" id="show_progress_bar" checked onclick="show_progress_bar_onclick()"><label for="show_progress_bar">Show progress bar</label><br/>
         &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="progress_bar_seeking_enabled" checked><label for="progress_bar_seeking_enabled">Allow seeking by clicking the progress bar</label><br/>
+        &nbsp;&nbsp;&nbsp;&nbsp;<input type="checkbox" id="progress_bar_on_top"><label for="progress_bar_on_top">Progress bar on top</label><br/>
         <h2>Select Music</h2>
 
         <input type="file" id="filechooser" multiple accept="audio/*" onchange="handleFiles(this.files)">
@@ -697,48 +698,80 @@ You should have received a copy of the GNU General Public License along with thi
         function show_progress_bar_onclick() {
             const show = document.getElementById('show_progress_bar')
             const seeking = document.getElementById('progress_bar_seeking_enabled')
+            const ontop = document.getElementById('progress_bar_on_top')
             seeking.checked = show.checked
             seeking.disabled = !show.checked
+            ontop.disabled = !show.checked
         }
-        const progress_bar_height_scaler = 1 / 12
+        const calculate_sizes = () => {
+            let s = {}
+            s.canvas_height = canvas.height
+            s.canvas_width = canvas.width
+            s.progress_bar_height = s.canvas_height * 1 / 12
+            s.is_progress_bar_present = document.getElementById('show_progress_bar').checked
+            s.height_except_progress_bar = s.is_progress_bar_present  ?
+                                           (s.canvas_height - s.progress_bar_height) :
+                                           s.canvas_height
+            s.is_progress_bar_on_top = document.getElementById('progress_bar_on_top').checked
+            if (s.is_progress_bar_on_top) {
+                s.ymin_except_progress_bar = s.progress_bar_height
+                s.ymin_of_progress_bar = 0
+            } else {
+                s.ymin_except_progress_bar = 0
+                s.ymin_of_progress_bar = s.height_except_progress_bar
+            }
+            s.ymax_except_progress_bar = s.ymin_except_progress_bar + s.height_except_progress_bar
+            s.ymax_of_progress_bar = s.ymin_of_progress_bar + s.progress_bar_height
+            s.boxs = max(min(s.canvas_width, s.height_except_progress_bar) / 9, 30)
+            s.buttons_bottom_padding = 10
+            s.buttons_left_padding = 10
+            s.buttons_right_padding = 10
+            s.buttons_spacing = 8
+            s.buttons_count = 5
+            s.buttons = [];
+            let curr_x = s.buttons_left_padding
+            for (let i=0; i<s.buttons_count; i++) {
+                let button = {}
+                button.ymax = s.ymax_except_progress_bar - s.buttons_bottom_padding
+                button.ymin = button.ymax - s.boxs
+                button.xmin = curr_x
+                button.xmax = button.xmin + s.boxs
+                curr_x += s.boxs + s.buttons_spacing
+                s.buttons.push(button)
+            }
+            return s
+        }
         canvas.onclick = (ev) => {
-            const progress_bar_height = canvas.height * progress_bar_height_scaler
-            const boxs = max(min(canvas.width, (canvas.height - progress_bar_height)) / 9, 30)
-            let captured = false
+            const s = calculate_sizes()
             if (document.getElementById('navigation_buttons_enable').checked) {
-                if (ev.clientY > canvas.height-boxs-4 - progress_bar_height && ev.clientY < canvas.height - progress_bar_height) {
-                    if (ev.clientX < boxs + 4) {
-                        click_pause(ev)
-                        captured = true
-                    } else if (ev.clientX < 4 + boxs + 8 + boxs) {
-                        click_skip_prev(ev)
-                        captured = true
-                    } else if (ev.clientX < 4 + boxs + (8 + boxs) * 2) {
-                        click_skip_next(ev)
-                        captured = true
-                    } else if (ev.clientX < 4 + boxs + (8 + boxs) * 3) {
-                        adjust_available_time(60, ev)
-                        captured = true
-                    } else if (ev.clientX < 4 + boxs + (8 + boxs) * 4) {
-                        adjust_available_time(-60, ev)
-                        captured = true
+                for (const [index, button] of s.buttons.entries()) {
+                    if ((ev.clientY > button.ymin) &&
+                        (ev.clientY < button.ymax) &&
+                        (ev.clientX > button.xmin) &&
+                        (ev.clientX < button.xmax))
+                    {
+                        switch(index) {
+                            case 0: return click_pause(ev)
+                            case 1: return click_skip_prev(ev)
+                            case 2: return click_skip_next(ev)
+                            case 3: return adjust_available_time(60, ev)
+                            case 4: return adjust_available_time(-60, ev)
+                        }
+                        return
                     }
                 }
             }
-            if (document.getElementById('show_progress_bar').checked) {
-                if (ev.clientY > canvas.height - (progress_bar_height) / 2) {
-                    captured = true
+            if (s.is_progress_bar_present) {
+                if (ev.clientY > s.ymin_of_progress_bar && ev.clientY < s.ymax_of_progress_bar) {
                     if (document.getElementById('progress_bar_seeking_enabled').checked) {
                         const total_length = structure_expanded[structure_expanded.length - 1][2]
-                        const next_time = ev.clientX / canvas.width * total_length
+                        const next_time = ev.clientX / s.canvas_width * total_length
                         seek_to_time(next_time, ev)
                     }
+                    return
                 }
             }
-
-            if (!captured) {
-                toggle_fullscreen()
-            }
+            toggle_fullscreen()
         }
         const cc = canvas.getContext("2d")
         let start_time = 0
@@ -805,199 +838,246 @@ You should have received a copy of the GNU General Public License along with thi
             if (section_type == "summary") return "orange"
             return "black"
         }
-        let last_canvasX = null
-        let last_canvasY = null
-        let touch_device = false
-        function drawCurrentFrame() {
-            let cursor_style = "initial"
-            let time = get_current_session_time()
-            cc.setTransform(1, 0, 0, 1, 0, 0)
-            cc.fillStyle="black"
-            cc.fillRect(0, 0, canvas.width, canvas.height)
 
-            const progress_bar_height = canvas.height * progress_bar_height_scaler // only used if enabled
-            const height_left =  document.getElementById('show_progress_bar').checked ? (canvas.height - progress_bar_height) : canvas.height
+        const draw_pause_symbol_in_button = (cc, button) => {
+            const boxs_w = (button.xmax - button.xmin)
+            const boxs_h = (button.ymax - button.ymin)
+            const d = boxs_w * 2 / 10 // d is the distance between the parallel bars
+            const w = boxs_w * 2 / 10 // wxh is the size of each bar
+            const h = boxs_h * 7 / 10
+            const xoffset = (boxs_w-(w*2 + d)) / 2
+            const yoffset = (boxs_h - h) / 2
+            cc.fillRect(button.xmin + xoffset, button.ymin + yoffset, w, h)
+            cc.fillRect(button.xmin + xoffset + w + d, button.ymin + yoffset, w, h)
+        }
 
-            cc.fillStyle="white"
-            let found = false
-            let ii = 0
-            let sect = null
-            for (ii = 0; ii<structure_expanded.length; ii++) {
-                sect = structure_expanded[ii]
+        const draw_fast_forward_rewind = (cc, xmin, xmax, ymin, ymax) => {
+            cc.beginPath()
+            const boxs_w = xmax - xmin
+            const boxs_h = ymax - ymin
+            cc.moveTo(xmin + boxs_w * 1 / 2, ymin + boxs_h / 10)
+            cc.lineTo(xmin + boxs_w * 1 / 6, ymin + boxs_h / 2)
+            cc.lineTo(xmin + boxs_w * 1 / 2, ymin + boxs_h - boxs_h / 10)
+            cc.fill()
+            cc.beginPath()
+            cc.moveTo(xmin + boxs_w * 5 / 6, ymin + boxs_h / 10)
+            cc.lineTo(xmin + boxs_w * 1 / 2, ymin + boxs_h / 2)
+            cc.lineTo(xmin + boxs_w * 5 / 6, ymin + boxs_h - boxs_h / 10)
+            cc.fill()
+        }
+
+        const calculate_clock_sizes = (time, structure_expanded, sizes) => {
+            const s = sizes
+            for (const [index, sect] of structure_expanded.entries()) {
                 if ((time >= sect[1]) && (time < sect[2])) {
-                    let len = sect[2] - sect[1]
-                    let pos = time - sect[1]
-                    let left = len - pos
-                    let mprogress = (60 - left / 60) / 60
-                    
+                    let cs = {}
+                    const len = sect[2] - sect[1]
+                    const pos = time - sect[1]
+                    cs.left = len - pos
+                    cs.mprogress = (60 - cs.left / 60) / 60
+
                     // These are the 16:9 aspect ratio variants
-                    let x = canvas.width - 20
-                    let y = height_left / 2
-                    let r = min(canvas.width, height_left / 2)
-                    let tx = (canvas.width - height_left/2) / 2
-                    let ty = height_left / 2
-                    let fontsize = Math.floor(canvas.width * 0.25)
+                    cs.x = s.canvas_width - 20
+                    cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar / 2
+                    cs.r = min(s.canvas_width, s.height_except_progress_bar / 2)
+                    cs.tx = (s.canvas_width - s.height_except_progress_bar/2) / 2
+                    cs.ty = s.ymin_except_progress_bar + s.height_except_progress_bar / 2
+                    cs.fontsize = Math.floor(s.canvas_width * 0.25)
 
-                    cc.textAlign = "center"
-                    cc.textBaseline = "middle"
-                    
-                    const ratio = canvas.width/height_left
+                    cs.textAlign = "center"
+                    cs.textBaseline = "middle"
+                    cs.fillStyle="white"
 
-                    if (left >= 60) {
+                    const ratio = s.canvas_width/s.height_except_progress_bar
+
+                    if (cs.left >= 60) {
                         if (ratio < 0.9124767225325885) {
-                            y = height_left * 74 / 100
-                            fontsize = height_left * 0.25
-                            ty = fontsize / 2 * 1.2
-                            tx = canvas.width / 2
+                            cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar * 74 / 100
+                            cs.fontsize = s.height_except_progress_bar * 0.25
+                            cs.ty = s.ymin_except_progress_bar + cs.fontsize / 2 * 1.2
+                            cs.tx = s.canvas_width / 2
                             if (ratio < 0.6444981862152358) {
-                                fontsize = canvas.width * 0.35
+                                cs.fontsize = s.canvas_width * 0.35
 
                             }
                         } else if (ratio < 1.3824975417895773) {
-                            y = height_left * 74 / 100
-                            ty = height_left / 3
-                            tx = canvas.width * 34 / 100
+                            cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar * 74 / 100
+                            cs.ty = s.ymin_except_progress_bar + s.height_except_progress_bar / 3
+                            cs.tx = s.canvas_width * 34 / 100
                         }
                     } else {
-                        mprogress = (60 - left)/ 60
-                        cc.fillStyle="red"
-                        
-                        tx = 10
-                        ty = 10
-                        
+                        cs.mprogress = (60 - cs.left)/ 60
+                        cs.fillStyle="red"
+
+                        cs.tx = 10
+                        cs.ty = s.ymin_except_progress_bar + 10
+
                         if (ratio > 1) {
-                            r = min(canvas.width / 4, height_left / 2)
-                            cc.textAlign = "left"
-                            cc.textBaseline = "top"
-                            y = height_left - r
+                            cs.r = min(s.canvas_width / 4, s.height_except_progress_bar / 2)
+                            cs.textAlign = "left"
+                            cs.textBaseline = "top"
+                            cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar - cs.r
                         } else {
-                            r = min((canvas.width - 20) / 2, height_left * 60 / 100 / 2)
-                            y = height_left - r - 10
-                            tx = canvas.width / 2
-                            ty = height_left / 4
-                            fontsize = Math.floor(canvas.width * 0.45)
+                            cs.r = min((s.canvas_width - 20) / 2, s.height_except_progress_bar * 60 / 100 / 2)
+                            cs.y = s.ymin_except_progress_bar + s.height_except_progress_bar - cs.r - 10
+                            cs.tx = s.canvas_width / 2
+                            cs.ty = s.ymin_except_progress_bar + s.height_except_progress_bar / 4
+                            cs.fontsize = Math.floor(s.canvas_width * 0.45)
                         }
-                        x = canvas.width - r - 10
-                        
+                        cs.x = s.canvas_width - cs.r - 10
                     }
-
-                    cc.beginPath()
-                    cc.arc(x, y, r * 0.8, Math.PI/2*3 + Math.PI * 2 * mprogress, Math.PI/2*3 + Math.PI * 2)
-                    cc.lineTo(x, y)
-                    cc.fill()
-
-                    const drawTick = (angle) => {
-                        cc.beginPath()
-                        cc.arc(x, y, r*0.95, angle - Math.PI/180, angle + Math.PI/180, false)
-                        cc.arc(x, y, r*0.85, angle + Math.PI/180, angle - Math.PI/180, true)
-                        cc.fill()
-                    }
-                    for (let i=0; i<12; i++)
-                        drawTick(Math.PI/2*3 + Math.PI * 2 - Math.PI / 2 / 3 * i)
-                    cc.strokeStyle = cc.fillStyle
-                    cc.lineWidth = 3.
-                    cc.beginPath()
-                    cc.arc(x, y, r * 0.95, 0, 2 * Math.PI)
-                    cc.stroke()
-
-                    cc.font = "" + fontsize + "px Arial"
-                    
-                    cc.fillText(minutes_seconds(left), tx, ty)
-
-                    found = true
-                    break
+                    cs.index = index
+                    cs.title = sect[0]
+                    return cs
                 }
             }
-            if (!found) {
-                let fontsize = Math.floor(canvas.width * 0.10)
-                cc.font = "" + fontsize + "px Arial"
-                cc.textAlign = "center"
-                cc.textBaseline = "middle"
-                cc.fillText("THE END", canvas.width/2, height_left/2)
+        }
+
+        const drawClockTick = (cc, angle, clock_sizes) => {
+            const cs = clock_sizes
+            cc.beginPath()
+            cc.arc(cs.x, cs.y, cs.r*0.95, angle - Math.PI/180, angle + Math.PI/180, false)
+            cc.arc(cs.x, cs.y, cs.r*0.85, angle + Math.PI/180, angle - Math.PI/180, true)
+            cc.fill()
+        }
+
+        const drawClock = (cc, clock_sizes) => {
+            const cs = clock_sizes
+            cc.fillStyle = cs.fillStyle
+            cc.textAlign = cs.textAlign
+            cc.textBaseline = cs.textBaseline
+
+            cc.beginPath()
+            cc.arc(cs.x, cs.y, cs.r * 0.8, Math.PI/2*3 + Math.PI * 2 * cs.mprogress, Math.PI/2*3 + Math.PI * 2)
+            cc.lineTo(cs.x, cs.y)
+            cc.fill()
+
+            for (let i=0; i<12; i++) {
+                drawClockTick(cc, Math.PI/2*3 + Math.PI * 2 - Math.PI / 2 / 3 * i, cs)
             }
+            cc.strokeStyle = cc.fillStyle
+            cc.lineWidth = 3.
+            cc.beginPath()
+            cc.arc(cs.x, cs.y, cs.r * 0.95, 0, 2 * Math.PI)
+            cc.stroke()
+
+            cc.font = "" + cs.fontsize + "px Arial"
+            cc.fillText(minutes_seconds(cs.left), cs.tx, cs.ty)
+        }
+
+        const drawTheEnd = (cc, sizes) => {
+            const s = sizes
+            cc.fillStyle="white"
+            const fontsize = Math.floor(s.canvas_width * 0.10)
+            cc.font = "" + fontsize + "px Arial"
+            cc.textAlign = "center"
+            cc.textBaseline = "middle"
+            cc.fillText("THE END", s.canvas_width/2, s.height_except_progress_bar/2)
+        }
+
+        let last_canvasX = null
+        let last_canvasY = null
+        let touch_device = false
+
+        function drawCurrentFrame() {
+            const s = calculate_sizes()
+            let cursor_style = "initial"
+            let time = get_current_session_time()
+            cc.fillStyle="black"
+            cc.fillRect(0, 0, s.canvas_width, s.canvas_height)
+
+            const cs = calculate_clock_sizes(time, structure_expanded, s)
+            if (cs) {
+                drawClock(cc, cs)
+            } else {
+                drawTheEnd(cc, s)
+            }
+    
             if (document.getElementById('navigation_buttons_enable').checked) {
-                const boxs = max(min(canvas.width, height_left) / 9, 30)
-                const h = boxs * 7 / 10
-                const w = boxs * 2 / 10
-                const d = boxs * 2 / 10
-                if (paused) {
-                    cc.fillStyle="rgba(255,255,255,1)"
-                } else {
-                    cc.fillStyle="rgba(255,255,255,0.2)"
+                const style_normal = "rgba(255,255,255,0.2)"
+                const style_highlighted = "rgba(255,255,255,1)"
+
+                // now draw all the squares
+                for (const [index, button] of s.buttons.entries()) {
+                    if (index == 0 && paused) {
+                        cc.fillStyle=style_highlighted
+                    } else {
+                        cc.fillStyle=style_normal
+                    }
+                    cc.strokeStyle=cc.fillStyle
+                    cc.strokeRect(button.xmin, button.ymin, s.boxs, s.boxs)
+                    if ((last_canvasY > button.ymin) &&
+                        (last_canvasY < button.ymax) &&
+                        (last_canvasX > button.xmin) &&
+                        (last_canvasX < button.xmax))
+                    {
+                        if ((last_canvasX < 4 + s.boxs + (8 + s.boxs) * 4)) {
+                            cursor_style = "pointer"
+                        }
+                    }
                 }
+
+                {
+                    // Draw parallel bars of pause button
+                    if (paused) {
+                        cc.fillStyle=style_highlighted
+                    } else {
+                        cc.fillStyle=style_normal
+                    }
+                    cc.strokeStyle=cc.fillStyle
+                    draw_pause_symbol_in_button(cc, s.buttons[0])
+                }
+
+                cc.fillStyle=style_normal
                 cc.strokeStyle=cc.fillStyle
-                cc.strokeRect(4, height_left-boxs-4, boxs, boxs)
-                cc.fillRect(4 + (boxs-(w*2 + d))/2, height_left-boxs-4 + (boxs - h)/2, w, h)
-                cc.fillRect(4 + (boxs-(w*2 + d))/2 + w + d, height_left-boxs-4 + (boxs - h)/2, w, h)
-                cc.fillStyle="rgba(255,255,255,0.2)"
-                cc.strokeStyle=cc.fillStyle
-                cc.strokeRect(4 + boxs + 8, height_left-boxs-4, boxs, boxs)
-                cc.strokeRect(4 + boxs + 8 + boxs + 8, height_left-boxs-4, boxs, boxs)
-                cc.font = "" + boxs + "px Arial"
+                cc.font = "" + s.boxs + "px Arial"
                 cc.textAlign = "center"
                 cc.textBaseline = "middle"
 
                 /* Drawing for the previous-chapter button: */
-                cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs / 2, height_left - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs * 1 / 6, height_left - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs / 2, height_left - boxs - 4 + boxs - boxs / 10)
-                cc.fill()
-                cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs * 5 / 6, height_left - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs * 5 / 6, height_left - boxs - 4 + boxs - boxs / 10)
-                cc.fill()
+                draw_fast_forward_rewind(
+                    cc,
+                    s.buttons[1].xmin,
+                    s.buttons[1].xmax,
+                    s.buttons[1].ymin,
+                    s.buttons[1].ymax)
+
                 /* Drawing for the next-chapter button: */
-                cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, height_left - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 6, height_left - boxs - 4 + boxs - boxs / 10)
-                cc.fill()
-                cc.beginPath()
-                cc.moveTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs / 10)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 5 / 6, height_left - boxs - 4 + boxs / 2)
-                cc.lineTo(4 + boxs + 8 + boxs + 8 + boxs * 1 / 2, height_left - boxs - 4 + boxs - boxs / 10)
-                cc.fill()
+                draw_fast_forward_rewind(
+                    cc,
+                    s.buttons[2].xmax, // order reversed on purpose
+                    s.buttons[2].xmin,
+                    s.buttons[2].ymin,
+                    s.buttons[2].ymax)
 
-                cc.strokeRect(4 + (boxs + 8) * 3, height_left-boxs-4, boxs, boxs)
-                cc.strokeRect(4 + (boxs + 8) * 4, height_left-boxs-4, boxs, boxs)
-                cc.font = "" + (boxs/3) + "px Arial"
-                cc.fillText("Time", 4 + (boxs + 8) * 3 + boxs/2, height_left-boxs-4 + boxs*4/5)
-                cc.fillText("Time", 4 + (boxs + 8) * 4 + boxs/2, height_left-boxs-4 + boxs*4/5)
-                cc.font = "" + (boxs/1) + "px Arial"
-                cc.fillText("+",    4 + (boxs + 8) * 3 + boxs/2, height_left-boxs-4 + boxs*2.25/5)
-                cc.fillText("-",    4 + (boxs + 8) * 4 + boxs/2, height_left-boxs-4 + boxs*1.8/5)
+                cc.font = "" + (s.boxs/3) + "px Arial"
+                cc.fillText("Time", s.buttons[3].xmin + s.boxs/2, s.buttons[3].ymin + s.boxs*4/5)
+                cc.fillText("Time", s.buttons[4].xmin + s.boxs/2, s.buttons[4].ymin + s.boxs*4/5)
+                cc.font = "" + (s.boxs/1) + "px Arial"
+                cc.fillText("+",    s.buttons[3].xmin + s.boxs/2, s.buttons[3].ymin + s.boxs*2.25/5)
+                cc.fillText("-",    s.buttons[4].xmin + s.boxs/2, s.buttons[4].ymin + s.boxs*1.8/5)
 
-                if (found) {
+                if (cs) {
                     cc.textAlign = "left"
-                    cc.font = "" + (boxs/2) + "px Arial"
-                    cc.fillText("" + ii + ": " + sect[0], 4 + (boxs + 8) * 5 + 2, height_left-boxs-4 + boxs*3/4)
+                    cc.font = "" + (s.boxs/2) + "px Arial"
+                    cc.fillText("" + cs.index + ": " + cs.title, s.buttons[s.buttons.length-1].xmax + s.buttons_right_padding, s.buttons[s.buttons.length-1].ymin + s.boxs*3/4)
                 }
-
-                if (last_canvasY > height_left-boxs-4 && last_canvasY < height_left) {
-                    if ((last_canvasX < 4 + boxs + (8 + boxs) * 4)) {
-                        cursor_style = "pointer"
-                    }
-                }
-
             }
             if (document.getElementById('show_progress_bar').checked) {
-                cc.setTransform(1, 0, 0, 1, 0, canvas.height - progress_bar_height)
                 cc.fillStyle="red"
                 const total_length = structure_expanded[structure_expanded.length - 1][2]
                 const progress = time / total_length
-                const tick_w = canvas.width / 240
-                const progress_width = (canvas.width) * progress
-                cc.fillRect(0, progress_bar_height / 2, progress_width , progress_bar_height / 2)
+                const tick_w = s.canvas_width / 240
+                const progress_width = (s.canvas_width) * progress
+                cc.fillRect(0, s.ymin_of_progress_bar + s.progress_bar_height / 2, progress_width , s.progress_bar_height / 2)
                 cc.fillStyle="grey"
-                cc.fillRect(progress_width, progress_bar_height / 2, canvas.width - progress_width , progress_bar_height / 2)
+                cc.fillRect(progress_width, s.ymin_of_progress_bar + s.progress_bar_height / 2, s.canvas_width - progress_width , s.progress_bar_height / 2)
                 for (const f of structure_expanded) {
                     const fill_color = get_progress_bar_color_of(f[0])
-                    const right_edge = f[2] * canvas.width / total_length
-                    const left_edge = f[1] * canvas.width / total_length
+                    const right_edge = f[2] * s.canvas_width / total_length
+                    const left_edge = f[1] * s.canvas_width / total_length
                     cc.fillStyle=fill_color
-                    cc.fillRect(left_edge, 0, right_edge - left_edge, progress_bar_height / 2)
+                    cc.fillRect(left_edge, s.ymin_of_progress_bar, right_edge - left_edge, s.progress_bar_height / 2)
                 }
                 cc.fillStyle="white"
                 for (let i=0; i<structure_expanded.length - 1; i++) {
@@ -1005,27 +1085,23 @@ You should have received a copy of the GNU General Public License along with thi
                     const fill_color = get_progress_bar_color_of(f[0])
                     const fill_color_next = get_progress_bar_color_of(structure_expanded[i+1][0])
                     if (fill_color_next == fill_color) {
-                        const tick_x = f[2] * canvas.width / total_length
+                        const tick_x = f[2] * s.canvas_width / total_length
                         // Print a tick, if color is the same
                         cc.beginPath()
-                        cc.moveTo(tick_x - tick_w, 0)
-                        cc.lineTo(tick_x + tick_w, 0)
-                        cc.lineTo(tick_x + tick_w, progress_bar_height / 4)
-                        cc.lineTo(tick_x, progress_bar_height / 2)
-                        cc.lineTo(tick_x - tick_w, progress_bar_height / 4)
+                        cc.moveTo(tick_x - tick_w, s.ymin_of_progress_bar)
+                        cc.lineTo(tick_x + tick_w, s.ymin_of_progress_bar)
+                        cc.lineTo(tick_x + tick_w, s.ymin_of_progress_bar + s.progress_bar_height / 4)
+                        cc.lineTo(tick_x, s.ymin_of_progress_bar + s.progress_bar_height / 2)
+                        cc.lineTo(tick_x - tick_w, s.ymin_of_progress_bar + s.progress_bar_height / 4)
                         cc.fill()
                     }
                 }
-                if (last_canvasY != null && last_canvasY > canvas.height - (progress_bar_height / 2)) {
+                if (last_canvasY != null && last_canvasY > s.ymin_of_progress_bar && last_canvasY < s.ymax_of_progress_bar) {
                     if (document.getElementById('progress_bar_seeking_enabled').checked) {
                         cursor_style = "col-resize"
                         if (!touch_device) {
                             cc.fillStyle="rgba(255,255,255,0.4)"
-                            cc.fillRect(0,progress_bar_height / 2,last_canvasX, progress_bar_height)
-                            /*cc.fillStyle="red"
-                            cc.beginPath()
-                            cc.ellipse(progress_width, progress_bar_height * 3 / 4, progress_bar_height/2, progress_bar_height/2, 0, 0, 2 * Math.PI)
-                            cc.fill()*/
+                            cc.fillRect(0, s.ymin_of_progress_bar, last_canvasX, s.progress_bar_height)
                         }
                     } else {
                         cursor_style = "not-allowed"
