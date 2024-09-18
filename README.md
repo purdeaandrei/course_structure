@@ -29,7 +29,9 @@ customized.
 
 When ready, click START.
 
-It is recommended to put the browser into full-screen mode at this stage.
+It is recommended to put the browser into full-screen mode at this stage. You can do
+this by clicking a non-button area of the stopwatch screen, or by pressing "F" on the
+keyboard, or using your browser's full-screen feature.
 
 You may use the on-screen navigation buttons (if they have been enabled), to pause
 and/or to skip or go back to sections. There is also a feature where you may request
