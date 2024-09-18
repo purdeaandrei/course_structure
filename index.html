@@ -1151,7 +1151,23 @@ You should have received a copy of the GNU General Public License along with thi
         let pointer_state = {
             last_canvasX: null,
             last_canvasY: null,
-            touch_device: false
+            touch_device: false,
+            visible: true
+        }
+
+        const set_up_mouse_autohide = () => {
+            let mouse_timer = null
+            body.addEventListener("mousemove", () => {
+                pointer_state.visible = true
+                if (mouse_timer) {
+                    clearTimeout(mouse_timer)
+                    mouse_timer = null
+                }
+                mouse_timer = setTimeout(() => {
+                    mouse_timer = null
+                    pointer_state.visible = false
+                }, 3000)
+            })
         }
 
         function drawCurrentFrame() {
@@ -1191,7 +1207,11 @@ You should have received a copy of the GNU General Public License along with thi
                     }
                 }
             }
-            canvas.style.cursor = cursor_style
+            if (pointer_state.visible) {
+                canvas.style.cursor = cursor_style
+            } else {
+                canvas.style.cursor = "none"
+            }
         }
 
         let previous_session_time = -1
@@ -1341,6 +1361,7 @@ You should have received a copy of the GNU General Public License along with thi
                 return
             }
             stop_song()
+            set_up_mouse_autohide()
             structure_expanded = expandStructure(getCurrentStructure())
             document.querySelector("#setup").style.display="none"
             canvas.style.display="block"
