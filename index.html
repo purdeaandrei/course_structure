@@ -325,10 +325,13 @@ You should have received a copy of the GNU General Public License along with thi
             log_ready_state(all_files[index][0], all_files[index][1])
             all_files[index][1].play()
         }
+        function is_audio_playing(audio_object) {
+            return !audio_object.paused && !audio_object.ended && (audio_object.currentTime > 0);
+        }
         function stop_song() {
             for (const file of all_files) {
                 if (file != null) {
-                    if (!file[1].paused && !file[1].ended && (file[1].currentTime>0)) {
+                    if (is_audio_playing(file[1])) {
                         file[1].pause()
                         file[1].currentTime = 0
                     }
@@ -401,7 +404,7 @@ You should have received a copy of the GNU General Public License along with thi
             // Play back silence, as a form of primitive wake lock, to help when the page is not in the foreground
             const silence = document.getElementById('silence_sound')
             silence.loop = true
-            if (silence.paused || silence.ended || (silence.currentTime <= 0)) {
+            if (!is_audio_playing(silence)) {
                 silence.play()
                 silence.volume = 0.01
             }
@@ -409,7 +412,7 @@ You should have received a copy of the GNU General Public License along with thi
 
         function pause_playing_silence() {
             const silence = document.getElementById('silence_sound')
-            if (!silence.paused && !silence.ended && (silence.currentTime > 0)) {
+            if (is_audio_playing(silence)) {
                 silence.pause()
                 silence.currentTime = 0
             }
@@ -567,7 +570,7 @@ You should have received a copy of the GNU General Public License along with thi
         function stop_notification_sounds() {
             for (const c of document.querySelectorAll('#notification_sounds audio')) {
                 // Note: this will not catch songs, because those exist outside of the document
-                if (!c.paused && !c.ended && c.currentTime > 0) {
+                if (is_audio_playing(c)) {
                     c.pause()
                     c.currentTime = 0
                 }
@@ -601,7 +604,7 @@ You should have received a copy of the GNU General Public License along with thi
                 unpause_this_au = null
                 for (const file of all_files) {
                     const au = file[1];
-                    if ((au.currentTime > 0) && !au.paused && !au.ended) {
+                    if (is_audio_playing(au)) {
                         au.pause()
                         unpause_this_au = au
                         break
