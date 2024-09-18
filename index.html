@@ -342,6 +342,9 @@ You should have received a copy of the GNU General Public License along with thi
             const tr = get_tr_parent_element(ev.target)
             const index = get_file_index_from_tr(tr)
             tr.remove()
+            if (is_audio_playing(all_files[index][1])) {
+                all_files[index][1].pause()
+            }
             all_files.splice(index, 1)
             if (all_files.length == 0) {
                 const music_list = document.getElementById('music_list')
