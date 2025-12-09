@@ -84,6 +84,7 @@ You should have received a copy of the GNU General Public License along with thi
         <div id="drophere"><b>You're about to drop a file!</b></div>
         What is this?: <a href="https://github.com/purdeaandrei/course_structure/blob/master/README.md">README</a>
         <h2>Structure</h2>
+        <div style="color:red" id="warning_structure_changed">Warning: We have changed the default structure on Dec 9 2025. Click the second button below to go back to the previous structure.</div>
         <button id="unlock_structure" onclick="unlock_structure()" class="mybutton">Unlock to edit structure</button>
         <button id="old_structure" onclick="old_structure()" class="mybutton">Load old default structure (2023-2024)</button>
         <table id="course-structure-list"></table>
@@ -553,6 +554,7 @@ You should have received a copy of the GNU General Public License along with thi
         function old_structure() {
             display_structure(old_default_structure)
             document.getElementById("old_structure").style.display = "none"
+            document.getElementById("warning_structure_changed").style.display = "none"
         }
 
         function unlock_structure() {
