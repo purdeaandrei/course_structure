@@ -85,6 +85,7 @@ You should have received a copy of the GNU General Public License along with thi
         What is this?: <a href="https://github.com/purdeaandrei/course_structure/blob/master/README.md">README</a>
         <h2>Structure</h2>
         <button id="unlock_structure" onclick="unlock_structure()" class="mybutton">Unlock to edit structure</button>
+        <button id="old_structure" onclick="old_structure()" class="mybutton">Load old default structure (2023-2024)</button>
         <table id="course-structure-list"></table>
         <script id="line-template" type="text/template">
             <tr>
@@ -217,6 +218,19 @@ You should have received a copy of the GNU General Public License along with thi
     <script>
         "use strict"
         let default_structure = [
+            ["silence",  3, 0, "Intro"],
+            ["music",    1, 0, "Intro song"],
+            ["silence", 13, 0, "Section 1"],
+            ["music",    3, 0, "Song 1"],
+            ["silence", 13, 0, "Section 2"],
+            ["music",    3, 0, "Song 2"],
+            ["silence", 13, 0, "Section 3"],
+            ["music",    3, 0, "Song 3"],
+            ["summary",  1,30, "Summary"],
+            ["music",    2,30, "Recording"],
+            ["silence",  1, 0, "Outro"]
+        ]
+        let old_default_structure = [
             ["silence",  3, 0, "Intro"],
             ["music",    1, 0, "Intro song"],
             ["silence", 13, 0, "Section 1"],
@@ -534,6 +548,11 @@ You should have received a copy of the GNU General Public License along with thi
             minutes += Math.floor(seconds / 60)
             seconds %= 60
             document.getElementById("total-length").innerText = minutes + ":" + seconds
+        }
+
+        function old_structure() {
+            display_structure(old_default_structure)
+            document.getElementById("old_structure").style.display = "none"
         }
 
         function unlock_structure() {
